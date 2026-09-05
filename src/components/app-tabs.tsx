@@ -24,24 +24,17 @@ export default function AppTabs() {
   const tabs = isProviderRole
     ? [
         { name: 'Dashboard', route: '/', icon: 'grid-outline', iconActive: 'grid' },
-        { name: 'Requests', route: '/bookings', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount || undefined },
-        { name: 'Jobs', route: '/explore', icon: 'briefcase-outline', iconActive: 'briefcase' },
+        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount || undefined },
+        { name: 'Services', route: '/services', icon: 'construct-outline', iconActive: 'construct' },
         { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', badge: unreadChatsCount || undefined },
         { name: 'Profile', route: '/profile', icon: 'person-outline', iconActive: 'person' },
-      ]
-    : isGuest
-    ? [
-        { name: 'Home', route: '/', icon: 'home-outline', iconActive: 'home' },
-        { name: 'Services', route: '/explore', icon: 'apps-outline', iconActive: 'apps' },
-        { name: 'Explore', route: '/explore', icon: 'search-outline', iconActive: 'search' },
-        { name: 'Account', route: '/profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
       ]
     : [
         { name: 'Home', route: '/', icon: 'home-outline', iconActive: 'home' },
-        { name: 'Services', route: '/explore', icon: 'apps-outline', iconActive: 'apps' },
-        { name: 'My Requests', route: '/bookings', icon: 'calendar-outline', iconActive: 'calendar', badge: activeRequestsCount || undefined },
-        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', badge: unreadChatsCount || undefined },
-        { name: 'Profile', route: '/profile', icon: 'person-outline', iconActive: 'person' },
+        { name: 'Services', route: '/services', icon: 'construct-outline', iconActive: 'construct' },
+        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount || undefined },
+        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', badge: (!isGuest && unreadChatsCount) ? unreadChatsCount : undefined },
+        { name: 'Profile', route: '/profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
       ];
 
   return (
@@ -51,7 +44,7 @@ export default function AppTabs() {
           const isFocused =
             tab.route === '/'
               ? pathname === '/' || pathname === '/index' || pathname === ''
-              : pathname.startsWith(tab.route);
+              : pathname.startsWith(tab.route) || (tab.route === '/requests' && pathname.startsWith('/bookings'));
 
           return (
             <Pressable

@@ -1,6 +1,0 @@
-import React from 'react';
-import AppTabs from './app-tabs';
-
-export default function AppTabsWeb() {
-  return <AppTabs />;
-}

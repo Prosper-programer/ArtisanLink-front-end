@@ -21,62 +21,112 @@ import {
   Shadows,
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { POPULAR_SERVICES, PROFESSIONALS, ServiceCategory, Professional } from '@/data/mockData';
+import { POPULAR_SERVICES, PROFESSIONALS, Professional } from '@/data/mockData';
 
 export default function ExploreScreen() {
   const {
-    openServiceDetails,
     openProfessionalProfile,
     openCreateRequest,
     startChatWithPro,
     selectedCategoryFilter,
     setSelectedCategoryFilter,
-    searchQuery,
-    setSearchQuery,
+    authStatus,
+    openAuthModal,
+    language,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'services' | 'professionals'>('services');
+  const isGuest = authStatus === 'guest';
+  const isFrench = language === 'fr';
 
-  const filteredServices = useMemo(() => {
-    return POPULAR_SERVICES.filter((s) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        s.name.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        s.popularServices.some((p) => p.toLowerCase().includes(q))
-      );
-    });
-  }, [searchQuery]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'today' | 'topRated'>('all');
+
+  const categoryNamesFr: Record<string, string> = {
+    plumbing: 'Plomberie',
+    electrical: 'Électricité',
+    painting: 'Peinture',
+    carpentry: 'Menuiserie',
+    cleaning: 'Nettoyage',
+    masonry: 'Maçonnerie',
+    construction: 'Construction',
+    mechanics: 'Mécanique',
+    pastry: 'Pâtisserie',
+  };
+
+  const getCategoryLabel = (id: string, name: string) => {
+    return isFrench && categoryNamesFr[id] ? categoryNamesFr[id] : name;
+  };
 
   const filteredPros = useMemo(() => {
     return PROFESSIONALS.filter((p) => {
+      // Category Filter
       if (
         selectedCategoryFilter !== 'all' &&
         p.category.toLowerCase() !== selectedCategoryFilter.toLowerCase()
       ) {
         return false;
       }
+
+      // Quick Availability / Rating Filter
+      if (quickFilter === 'today' && p.availability !== 'Available Today') {
+        return false;
+      }
+      if (quickFilter === 'topRated' && p.rating < 4.9) {
+        return false;
+      }
+
+      // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
           p.name.toLowerCase().includes(q) ||
           p.profession.toLowerCase().includes(q) ||
+          p.specialization.toLowerCase().includes(q) ||
+          p.location.toLowerCase().includes(q) ||
           p.skills.some((sk) => sk.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [selectedCategoryFilter, searchQuery]);
+  }, [selectedCategoryFilter, quickFilter, searchQuery]);
+
+  const handleChatPress = (pro: Professional) => {
+    if (isGuest) {
+      openAuthModal(() => {
+        startChatWithPro(pro);
+      });
+    } else {
+      startChatWithPro(pro);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Top Header */}
         <View style={styles.topHeader}>
-          <ThemedText type="headlineLg" style={styles.headerTitle}>
-            Services & Trades
-          </ThemedText>
+          <View style={styles.headerTitleRow}>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="headlineLg" style={styles.headerTitle}>
+                {isFrench ? 'Explorer les Artisans' : 'Explore Providers'}
+              </ThemedText>
+              <ThemedText style={styles.headerSub}>
+                {isFrench
+                  ? 'Découvrez nos professionnels certifiés sans créer de compte'
+                  : 'Discover verified professionals & portfolios without creating an account'}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Guest Reassurance Banner */}
+          <View style={styles.reassurancePill}>
+            <Ionicons name="sparkles" size={14} color={Palette.primary} />
+            <ThemedText style={styles.reassuranceText}>
+              {isFrench
+                ? 'Accès libre : consultez profils, avis et tarifs en toute liberté'
+                : 'Free access: view profiles, reviews, and rates with zero signup required'}
+            </ThemedText>
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -85,159 +135,286 @@ export default function ExploreScreen() {
             <Ionicons name="search" size={18} color={Palette.primary} />
             <TextInput
               style={styles.searchInput}
-              placeholder={activeTab === 'services' ? 'Search services...' : 'Search professionals by name, trade...'}
+              placeholder={
+                isFrench
+                  ? 'Rechercher par nom, métier, compétences...'
+                  : 'Search by artisan name, trade, specialty, skills...'
+              }
               placeholderTextColor={Palette.secondaryText}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              returnKeyType="search"
             />
             {searchQuery.length > 0 && (
-              <Pressable onPress={() => setSearchQuery('')}>
+              <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
                 <Ionicons name="close-circle" size={18} color={Palette.secondaryText} />
               </Pressable>
             )}
           </View>
         </View>
 
-        {/* Switcher Tabs: Services vs Professionals */}
-        <View style={styles.switchTabsRow}>
+        {/* Category Filter Chips Bar */}
+        <View style={styles.categoryChipsBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsScroll}>
+            <Pressable
+              onPress={() => setSelectedCategoryFilter('all')}
+              style={[
+                styles.categoryChip,
+                selectedCategoryFilter === 'all' && styles.categoryChipActive,
+              ]}>
+              <ThemedText
+                style={[
+                  styles.categoryChipText,
+                  selectedCategoryFilter === 'all' && styles.categoryChipTextActive,
+                ]}>
+                {isFrench ? 'Tous les métiers' : 'All Trades'}
+              </ThemedText>
+            </Pressable>
+
+            {POPULAR_SERVICES.map((cat) => {
+              const isSelected = selectedCategoryFilter === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => setSelectedCategoryFilter(cat.id)}
+                  style={[styles.categoryChip, isSelected && styles.categoryChipActive]}>
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={14}
+                    color={isSelected ? '#FFFFFF' : Palette.secondaryText}
+                  />
+                  <ThemedText
+                    style={[
+                      styles.categoryChipText,
+                      isSelected && styles.categoryChipTextActive,
+                    ]}>
+                    {getCategoryLabel(cat.id, cat.name)}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Secondary Quick Filter Pills (All / Today / Top Rated) */}
+        <View style={styles.quickFilterBar}>
           <Pressable
-            onPress={() => setActiveTab('services')}
-            style={[styles.switchTab, activeTab === 'services' && styles.switchTabActive]}>
+            onPress={() => setQuickFilter('all')}
+            style={[
+              styles.quickFilterBtn,
+              quickFilter === 'all' && styles.quickFilterBtnActive,
+            ]}>
             <ThemedText
               style={[
-                styles.switchTabText,
-                activeTab === 'services' && styles.switchTabTextActive,
+                styles.quickFilterText,
+                quickFilter === 'all' && styles.quickFilterTextActive,
               ]}>
-              All Services ({filteredServices.length})
+              {isFrench ? 'Tous' : 'All'} ({filteredPros.length})
             </ThemedText>
           </Pressable>
 
           <Pressable
-            onPress={() => setActiveTab('professionals')}
-            style={[styles.switchTab, activeTab === 'professionals' && styles.switchTabActive]}>
+            onPress={() => setQuickFilter('today')}
+            style={[
+              styles.quickFilterBtn,
+              quickFilter === 'today' && styles.quickFilterBtnActive,
+            ]}>
+            <Ionicons
+              name="flash"
+              size={12}
+              color={quickFilter === 'today' ? '#FFFFFF' : Palette.accent}
+            />
             <ThemedText
               style={[
-                styles.switchTabText,
-                activeTab === 'professionals' && styles.switchTabTextActive,
+                styles.quickFilterText,
+                quickFilter === 'today' && styles.quickFilterTextActive,
               ]}>
-              Professionals ({filteredPros.length})
+              {isFrench ? 'Dispo aujourd’hui' : 'Available Today'}
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setQuickFilter('topRated')}
+            style={[
+              styles.quickFilterBtn,
+              quickFilter === 'topRated' && styles.quickFilterBtnActive,
+            ]}>
+            <Ionicons
+              name="star"
+              size={12}
+              color={quickFilter === 'topRated' ? '#FFFFFF' : Palette.gold}
+            />
+            <ThemedText
+              style={[
+                styles.quickFilterText,
+                quickFilter === 'topRated' && styles.quickFilterTextActive,
+              ]}>
+              {isFrench ? 'Top notés (4.9+)' : 'Top Rated (4.9+)'}
             </ThemedText>
           </Pressable>
         </View>
 
-        {/* Category Chips if viewing Professionals */}
-        {activeTab === 'professionals' && (
-          <View style={styles.categoryChipsBar}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-              <Pressable
-                onPress={() => setSelectedCategoryFilter('all')}
-                style={[
-                  styles.categoryChip,
-                  selectedCategoryFilter === 'all' && styles.categoryChipActive,
-                ]}>
-                <ThemedText
-                  style={[
-                    styles.categoryChipText,
-                    selectedCategoryFilter === 'all' && styles.categoryChipTextActive,
-                  ]}>
-                  All Trades
-                </ThemedText>
-              </Pressable>
-
-              {POPULAR_SERVICES.map((cat) => {
-                const isSelected = selectedCategoryFilter === cat.id;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    onPress={() => setSelectedCategoryFilter(cat.id)}
-                    style={[styles.categoryChip, isSelected && styles.categoryChipActive]}>
-                    <ThemedText
-                      style={[
-                        styles.categoryChipText,
-                        isSelected && styles.categoryChipTextActive,
-                      ]}>
-                      {cat.name}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Main Body List */}
+        {/* Professionals List */}
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {activeTab === 'services' ? (
-            /* SERVICES GRID VIEW */
-            <View style={styles.servicesGrid}>
-              {filteredServices.map((cat) => (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => openServiceDetails(cat)}
-                  style={styles.serviceGridCard}>
-                  <Image source={{ uri: cat.image }} style={styles.serviceGridImg} />
-                  <View style={styles.serviceGridOverlay} />
-                  <View style={styles.serviceGridContent}>
-                    <ThemedText style={styles.serviceGridTitle}>{cat.name}</ThemedText>
-                    <ThemedText style={styles.serviceGridSub}>
-                      {cat.count} verified pros available
-                    </ThemedText>
-                  </View>
-                </Pressable>
-              ))}
+          {filteredPros.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color={Palette.secondaryText} />
+              <ThemedText style={styles.emptyTitle}>
+                {isFrench ? 'Aucun artisan trouvé' : 'No artisans match your criteria'}
+              </ThemedText>
+              <ThemedText style={styles.emptySub}>
+                {isFrench
+                  ? 'Essayez de changer les filtres de métier ou la recherche par mot-clé.'
+                  : 'Try clearing your search query or choosing another trade category.'}
+              </ThemedText>
+              <Pressable
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedCategoryFilter('all');
+                  setQuickFilter('all');
+                }}
+                style={styles.resetBtn}>
+                <ThemedText style={styles.resetBtnText}>
+                  {isFrench ? 'Réinitialiser les filtres' : 'Reset All Filters'}
+                </ThemedText>
+              </Pressable>
             </View>
           ) : (
-            /* PROFESSIONALS LIST VIEW */
-            <View style={styles.prosList}>
-              {filteredPros.map((pro) => (
-                <Pressable
-                  key={pro.id}
-                  onPress={() => openProfessionalProfile(pro)}
-                  style={styles.proCard}>
-                  <View style={styles.proCardTop}>
+            filteredPros.map((pro) => (
+              <View key={pro.id} style={styles.proCard}>
+                {/* Pro Top Header */}
+                <View style={styles.proCardTop}>
+                  <View style={styles.avatarWrap}>
                     <Image source={{ uri: pro.avatar }} style={styles.proAvatar} />
+                    <View style={styles.onlineBadge} />
+                  </View>
 
-                    <View style={styles.proInfo}>
-                      <View style={styles.proNameRow}>
-                        <ThemedText style={styles.proName}>{pro.name}</ThemedText>
-                        {pro.verified && (
-                          <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
-                        )}
-                      </View>
+                  <View style={styles.proInfo}>
+                    <View style={styles.proNameRow}>
+                      <ThemedText style={styles.proName}>{pro.name}</ThemedText>
+                      {pro.verified && (
+                        <View style={styles.verifiedBadge}>
+                          <Ionicons name="checkmark-circle" size={15} color={Palette.success} />
+                          <ThemedText style={styles.verifiedText}>
+                            {isFrench ? 'Vérifié' : 'Verified'}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
 
-                      <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
+                    <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
+                    <ThemedText style={styles.proSpecialization} numberOfLines={1}>
+                      {pro.specialization}
+                    </ThemedText>
 
-                      <View style={styles.proMetaRow}>
+                    <View style={styles.proMetaRow}>
+                      <View style={styles.ratingRow}>
                         <Ionicons name="star" size={13} color={Palette.gold} />
                         <ThemedText style={styles.proRating}>
-                          {pro.rating} · {pro.reviewCount} reviews
+                          {pro.rating} ({pro.reviewCount} {isFrench ? 'avis' : 'reviews'})
                         </ThemedText>
-                        <ThemedText style={styles.metaDot}>·</ThemedText>
+                      </View>
+                      <ThemedText style={styles.metaDot}>·</ThemedText>
+                      <View style={styles.distRow}>
+                        <Ionicons name="location-outline" size={13} color={Palette.secondaryText} />
                         <ThemedText style={styles.proDist}>{pro.distance}</ThemedText>
                       </View>
                     </View>
                   </View>
+                </View>
 
-                  <View style={styles.proActionsRow}>
-                    <Pressable
-                      onPress={() => startChatWithPro(pro)}
-                      style={styles.chatActionBtn}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={16} color={Palette.dark} />
-                      <ThemedText style={styles.chatActionText}>Chat</ThemedText>
-                    </Pressable>
-
-                    <Pressable
-                      onPress={() => openCreateRequest(undefined, pro)}
-                      style={styles.requestActionBtn}>
-                      <ThemedText style={styles.requestActionText}>Request Service</ThemedText>
-                    </Pressable>
+                {/* Badge Row: Hourly Rate, Experience, Availability */}
+                <View style={styles.proStatsRow}>
+                  <View style={styles.statPill}>
+                    <ThemedText style={styles.statPillLabel}>
+                      {isFrench ? 'Tarif :' : 'Rate:'}
+                    </ThemedText>
+                    <ThemedText style={styles.statPillValue}>${pro.hourlyRate}/hr</ThemedText>
                   </View>
-                </Pressable>
-              ))}
-            </View>
+
+                  <View style={styles.statPill}>
+                    <ThemedText style={styles.statPillLabel}>
+                      {isFrench ? 'Exp :' : 'Exp:'}
+                    </ThemedText>
+                    <ThemedText style={styles.statPillValue}>{pro.experienceYears} yrs</ThemedText>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.availabilityPill,
+                      pro.availability === 'Available Today' && styles.availabilityToday,
+                    ]}>
+                    <Ionicons
+                      name={pro.availability === 'Available Today' ? 'flash' : 'time-outline'}
+                      size={11}
+                      color={
+                        pro.availability === 'Available Today' ? Palette.accent : Palette.secondaryText
+                      }
+                    />
+                    <ThemedText
+                      style={[
+                        styles.availabilityText,
+                        pro.availability === 'Available Today' && styles.availabilityTodayText,
+                      ]}>
+                      {pro.availability}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {/* Skills tags */}
+                <View style={styles.skillsRow}>
+                  {pro.skills.slice(0, 3).map((sk, idx) => (
+                    <View key={idx} style={styles.skillTag}>
+                      <ThemedText style={styles.skillTagText}>{sk}</ThemedText>
+                    </View>
+                  ))}
+                  {pro.skills.length > 3 && (
+                    <View style={styles.skillTagMore}>
+                      <ThemedText style={styles.skillTagMoreText}>
+                        +{pro.skills.length - 3}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.proActionsRow}>
+                  {/* View Profile (Primary open for everyone, zero login required) */}
+                  <Pressable
+                    onPress={() => openProfessionalProfile(pro)}
+                    style={styles.viewProfileBtn}>
+                    <Ionicons name="eye-outline" size={15} color={Palette.primary} />
+                    <ThemedText style={styles.viewProfileBtnText}>
+                      {isFrench ? 'Voir Profil & Portfolio' : 'View Profile'}
+                    </ThemedText>
+                  </Pressable>
+
+                  {/* Chat Action (Prompts sign in if guest) */}
+                  <Pressable
+                    onPress={() => handleChatPress(pro)}
+                    style={styles.chatActionBtn}
+                    accessibilityLabel="Message professional">
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={Palette.dark} />
+                  </Pressable>
+
+                  {/* Request Service */}
+                  <Pressable
+                    onPress={() => openCreateRequest(undefined, pro)}
+                    style={styles.requestActionBtn}>
+                    <ThemedText style={styles.requestActionText}>
+                      {isFrench ? 'Demander' : 'Request'}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            ))
           )}
         </ScrollView>
       </SafeAreaView>
@@ -258,92 +435,133 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: Palette.surface,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
     color: Palette.dark,
+    letterSpacing: -0.5,
+  },
+  headerSub: {
+    fontSize: 13,
+    color: Palette.secondaryText,
+    marginTop: 2,
+  },
+  reassurancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Palette.surfaceContainerLow,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  reassuranceText: {
+    fontSize: 12,
+    color: Palette.primary,
+    fontWeight: '600',
   },
   searchWrap: {
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-    backgroundColor: Palette.surface,
+    paddingVertical: Spacing.xs,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Palette.surfaceContainerLow,
-    borderRadius: BorderRadius.default,
+    backgroundColor: Palette.surface,
+    borderRadius: BorderRadius.xl,
     paddingHorizontal: Spacing.md,
-    height: 44,
+    paddingVertical: 10,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    ...Shadows.subtle,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
     color: Palette.mainText,
-  },
-  switchTabsRow: {
-    flexDirection: 'row',
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    backgroundColor: Palette.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Palette.outline,
-  },
-  switchTab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  switchTabActive: {
-    borderBottomColor: Palette.primary,
-  },
-  switchTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Palette.secondaryText,
-  },
-  switchTabTextActive: {
-    color: Palette.primary,
-    fontWeight: '700',
+    paddingVertical: 0,
   },
   categoryChipsBar: {
     width: '100%',
-    backgroundColor: Palette.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Palette.outline,
+    maxWidth: MaxContentWidth,
+    paddingVertical: Spacing.xs,
   },
   chipsScroll: {
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs + 2,
-    gap: Spacing.xs + 2,
+    gap: Spacing.xs,
   },
   categoryChip: {
-    paddingVertical: 5,
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     borderRadius: BorderRadius.full,
+    backgroundColor: Palette.surfaceContainerLow,
     borderWidth: 1,
     borderColor: Palette.outline,
-    backgroundColor: Palette.surface,
   },
   categoryChipActive: {
     backgroundColor: Palette.primary,
     borderColor: Palette.primary,
   },
   categoryChipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: Palette.dark,
+    color: Palette.secondaryText,
   },
   categoryChipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  quickFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  quickFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Palette.surface,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+  },
+  quickFilterBtnActive: {
+    backgroundColor: Palette.dark,
+    borderColor: Palette.dark,
+  },
+  quickFilterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Palette.secondaryText,
+  },
+  quickFilterTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   scroll: {
     flex: 1,
@@ -354,64 +572,44 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: BottomTabInset + Spacing.xl,
-  },
-  servicesGrid: {
-    gap: Spacing.md,
-  },
-  serviceGridCard: {
-    width: '100%',
-    height: 130,
-    borderRadius: BorderRadius.default,
-    overflow: 'hidden',
-    position: 'relative',
-    ...Shadows.card,
-  },
-  serviceGridImg: {
-    width: '100%',
-    height: '100%',
-  },
-  serviceGridOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 48, 74, 0.45)',
-  },
-  serviceGridContent: {
-    position: 'absolute',
-    bottom: Spacing.md,
-    left: Spacing.md,
-    right: Spacing.md,
-  },
-  serviceGridTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  serviceGridSub: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 2,
-  },
-  prosList: {
+    paddingTop: Spacing.xs,
+    paddingBottom: BottomTabInset + Spacing.xl + 20,
     gap: Spacing.md,
   },
   proCard: {
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.default,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
     borderWidth: 1,
     borderColor: Palette.outline,
-    padding: Spacing.md,
-    gap: Spacing.md,
-    ...Shadows.subtle,
+    gap: Spacing.sm,
+    ...Shadows.card,
   },
   proCardTop: {
     flexDirection: 'row',
     gap: Spacing.md,
   },
+  avatarWrap: {
+    position: 'relative',
+    width: 62,
+    height: 62,
+  },
   proAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: Palette.surfaceContainerLow,
+  },
+  onlineBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Palette.success,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   proInfo: {
     flex: 1,
@@ -419,14 +617,35 @@ const styles = StyleSheet.create({
   proNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    gap: 6,
   },
   proName: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: Palette.dark,
   },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Palette.successLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Palette.success,
+  },
   proProfession: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Palette.primary,
+    marginTop: 1,
+  },
+  proSpecialization: {
     fontSize: 12,
     color: Palette.secondaryText,
     marginTop: 1,
@@ -435,7 +654,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 3,
+    marginTop: 4,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   proRating: {
     fontSize: 12,
@@ -446,42 +670,166 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Palette.secondaryText,
   },
+  distRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   proDist: {
     fontSize: 12,
     color: Palette.secondaryText,
   },
+  proStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Palette.surfaceContainerLow,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.lg,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statPillLabel: {
+    fontSize: 11,
+    color: Palette.secondaryText,
+    fontWeight: '600',
+  },
+  statPillValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Palette.dark,
+  },
+  availabilityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+    backgroundColor: Palette.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  availabilityToday: {
+    backgroundColor: Palette.accentLight,
+  },
+  availabilityText: {
+    fontSize: 11,
+    color: Palette.secondaryText,
+    fontWeight: '600',
+  },
+  availabilityTodayText: {
+    color: Palette.accentDark,
+    fontWeight: '700',
+  },
+  skillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  skillTag: {
+    backgroundColor: Palette.surfaceContainerLow,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+  },
+  skillTagText: {
+    fontSize: 11,
+    color: Palette.secondaryText,
+    fontWeight: '500',
+  },
+  skillTagMore: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.sm,
+  },
+  skillTagMoreText: {
+    fontSize: 11,
+    color: Palette.secondaryText,
+    fontWeight: '600',
+  },
   proActionsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Palette.outline,
   },
-  chatActionBtn: {
-    flex: 1,
+  viewProfileBtn: {
+    flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.default,
+    paddingVertical: 9,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Palette.surfaceContainerLow,
     borderWidth: 1,
     borderColor: Palette.outline,
-    backgroundColor: Palette.surface,
   },
-  chatActionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Palette.dark,
+  viewProfileBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Palette.primary,
   },
-  requestActionBtn: {
-    flex: 1.5,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.default,
-    backgroundColor: Palette.primary,
+  chatActionBtn: {
+    width: 38,
+    height: 36,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Palette.surfaceContainerLow,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Palette.outline,
+  },
+  requestActionBtn: {
+    flex: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Palette.primary,
   },
   requestActionText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Palette.dark,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: Palette.secondaryText,
+    textAlign: 'center',
+    maxWidth: 300,
+  },
+  resetBtn: {
+    marginTop: Spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Palette.primary,
+  },
+  resetBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
