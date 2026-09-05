@@ -4,8 +4,9 @@ import {
   StyleSheet,
   Pressable,
   Image,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius, Shadows } from '@/constants/theme';
@@ -15,32 +16,35 @@ const ONBOARDING_DATA = [
   {
     id: 1,
     step: 'FIND',
+    tag: 'EXPLORE SERVICES',
     title: 'Find the right professional',
-    description: 'Discover skilled professionals offering the services you need near you.',
-    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80', // Real plumber at work
+    description: 'Discover skilled and verified professionals offering the services you need near you.',
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&auto=format&fit=crop&q=85',
     buttonText: 'Next →',
     showBadges: false,
   },
   {
     id: 2,
     step: 'CONNECT',
+    tag: 'TRUSTED & VERIFIED',
     title: 'Connect with trusted professionals',
-    description: 'Compare professionals, explore their profiles and choose the right person for your job.',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80', // Real certified master professional
+    description: 'Compare professionals, explore real ratings and reviews, and choose the perfect artisan for your project.',
+    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&auto=format&fit=crop&q=85',
     buttonText: 'Next →',
     showBadges: true,
     badges: {
-      verified: 'Verified',
-      rating: '4.8',
+      verified: 'Verified Pro',
+      rating: '4.9',
       distance: '1.2 km',
     },
   },
   {
     id: 3,
     step: 'GET_IT_DONE',
+    tag: 'GUARANTEED QUALITY',
     title: 'Get the job done',
-    description: 'Send your request, communicate with your professional and get your work completed with confidence.',
-    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&auto=format&fit=crop&q=80', // Real pro and customer collaboration
+    description: 'Send your request, communicate directly with your professional, and get quality work done with total confidence.',
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&auto=format&fit=crop&q=85',
     buttonText: 'Get Started',
     showBadges: false,
   },
@@ -51,7 +55,7 @@ export const OnboardingModal: React.FC = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   if (appPhase !== 'ONBOARDING') return null;
- 
+
   const current = ONBOARDING_DATA[currentStepIndex];
   const isLast = currentStepIndex === ONBOARDING_DATA.length - 1;
 
@@ -69,98 +73,138 @@ export const OnboardingModal: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Full Screen Cover Image */}
+      {/* 1. Full-screen Cinematic Artisan Image taking the whole screen */}
       <Image
+        key={current.image}
         source={{ uri: current.image }}
         style={StyleSheet.absoluteFillObject}
         resizeMode="cover"
       />
 
-      {/* Dark Overlay Gradient for High Contrast Text */}
-      <View style={styles.imageOverlay} />
+      {/* 2. Ultra-Smooth Native Linear Gradient: Seamless transparent fade into rich navy dark */}
+      <LinearGradient
+        colors={[
+          'transparent',
+          'rgba(9, 21, 34, 0.08)',
+          'rgba(9, 21, 34, 0.35)',
+          'rgba(9, 21, 34, 0.68)',
+          'rgba(9, 21, 34, 0.92)',
+        ]}
+        locations={[0, 0.25, 0.55, 0.8, 1]}
+        style={styles.smoothBottomGradient}
+        pointerEvents="none"
+      />
 
-      <SafeAreaView style={styles.safeArea}>
-        {/* Top Bar Header */}
+      {/* 3. Safe Area Interactive Layer */}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+        {/* Top Header: Matching ArtisanLink Brand Bar & Clean Action Button */}
         <View style={styles.topBar}>
           <View style={styles.logoRow}>
             <View style={styles.logoBadge}>
-              <Ionicons name="construct" size={18} color="#FFFFFF" />
+              <Ionicons name="construct" size={17} color="#FFFFFF" />
             </View>
             <ThemedText style={styles.logoText}>
-              <ThemedText style={{ color: '#FFFFFF' }}>Artisan</ThemedText>
-              <ThemedText style={{ color: '#38BDF8' }}>Link</ThemedText>
+              <ThemedText style={{ color: Palette.dark, fontWeight: '800' }}>Artisan</ThemedText>
+              <ThemedText style={{ color: Palette.primary, fontWeight: '800' }}>Link</ThemedText>
             </ThemedText>
           </View>
 
-          {!isLast && (
-            <Pressable onPress={handleSkip} style={styles.skipBtn}>
+          {!isLast ? (
+            <Pressable
+              onPress={handleSkip}
+              style={({ pressed }) => [
+                styles.skipBtn,
+                pressed && styles.skipBtnPressed,
+              ]}
+              hitSlop={10}
+              accessibilityLabel="Skip onboarding">
               <ThemedText style={styles.skipBtnText}>Skip</ThemedText>
+              <Ionicons name="chevron-forward" size={15} color={Palette.secondaryText} />
             </Pressable>
+          ) : (
+            <View style={styles.skipSpacer} />
           )}
         </View>
 
-        {/* Step 2 Subtle Floating Badges */}
-        {current.showBadges && current.badges && (
-          <View style={styles.floatingBadgesContainer}>
-            <View style={styles.badgeItem}>
-              <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
-              <ThemedText style={styles.badgeItemText}>{current.badges.verified}</ThemedText>
+        {/* Bottom Section: Badge, Title, Description, Pagination Dots, Actions */}
+        <View style={styles.bottomContent}>
+            {/* Step Tag / Pill */}
+            <View style={styles.stepTagPill}>
+              <Ionicons name="sparkles" size={12} color={Palette.accent} />
+              <ThemedText style={styles.stepTagText}>{current.tag}</ThemedText>
             </View>
-            <View style={styles.badgeItem}>
-              <Ionicons name="star" size={15} color={Palette.gold} />
-              <ThemedText style={styles.badgeItemText}>{current.badges.rating}</ThemedText>
-            </View>
-            <View style={styles.badgeItem}>
-              <Ionicons name="location-sharp" size={15} color={Palette.primary} />
-              <ThemedText style={styles.badgeItemText}>{current.badges.distance}</ThemedText>
-            </View>
-          </View>
-        )}
 
-        {/* Bottom Content Card Overlaid on Image */}
-        <View style={styles.bottomSheetCard}>
-          <View style={styles.textSection}>
-            <ThemedText type="headlineLg" style={styles.title}>
-              {current.title}
-            </ThemedText>
-            <ThemedText style={styles.description}>
-              {current.description}
-            </ThemedText>
-          </View>
-
-          {/* Centered 3 Progress Dots in the Middle */}
-          <View style={styles.centeredProgressRow}>
-            {ONBOARDING_DATA.map((_, idx) => {
-              const active = idx === currentStepIndex;
-              return (
-                <View
-                  key={idx}
-                  style={[
-                    styles.progressDot,
-                    active ? styles.progressDotActive : styles.progressDotInactive,
-                  ]}
-                />
-              );
-            })}
-          </View>
-
-          {/* Action Buttons: Last screen does NOT have back arrow '<-', only Get Started */}
-          <View style={styles.actionsRow}>
-            {!isLast && currentStepIndex > 0 && (
-              <Pressable
-                onPress={() => setCurrentStepIndex((prev) => prev - 1)}
-                style={styles.backBtn}>
-                <Ionicons name="arrow-back" size={20} color={Palette.dark} />
-              </Pressable>
+            {/* Step 2 Trust Badges (Success Green verification, Warm Gold rating, Artisan Blue distance) */}
+            {current.showBadges && current.badges && (
+              <View style={styles.trustBadgesRow}>
+                <View style={styles.badgeItem}>
+                  <Ionicons name="checkmark-circle" size={14} color={Palette.success} />
+                  <ThemedText style={styles.badgeItemText}>{current.badges.verified}</ThemedText>
+                </View>
+                <View style={styles.badgeItem}>
+                  <Ionicons name="star" size={13} color={Palette.gold} />
+                  <ThemedText style={styles.badgeItemText}>{current.badges.rating}</ThemedText>
+                </View>
+                <View style={styles.badgeItem}>
+                  <Ionicons name="location-sharp" size={13} color={Palette.primary} />
+                  <ThemedText style={styles.badgeItemText}>{current.badges.distance}</ThemedText>
+                </View>
+              </View>
             )}
 
-            <Pressable onPress={handleNext} style={styles.primaryBtn}>
-              <ThemedText style={styles.primaryBtnText}>
-                {current.buttonText}
+            {/* Heading & Subtitle */}
+            <View style={styles.textStack}>
+              <ThemedText type="headlineLg" style={styles.title}>
+                {current.title}
               </ThemedText>
-            </Pressable>
+              <ThemedText style={styles.description}>
+                {current.description}
+              </ThemedText>
+            </View>
+
+            {/* Centered Pagination Dots */}
+            <View style={styles.dotsRow}>
+              {ONBOARDING_DATA.map((_, idx) => {
+                const active = idx === currentStepIndex;
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.progressDot,
+                      active ? styles.progressDotActive : styles.progressDotInactive,
+                    ]}
+                  />
+                );
+              })}
+            </View>
+
+            {/* Action Row: Back Button & Primary Button */}
+            <View style={styles.actionsRow}>
+              {currentStepIndex > 0 && (
+                <Pressable
+                  onPress={() => setCurrentStepIndex((prev) => prev - 1)}
+                  style={({ pressed }) => [
+                    styles.backBtn,
+                    pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+                  ]}
+                  accessibilityLabel="Go back">
+                  <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={handleNext}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                ]}
+                accessibilityLabel={current.buttonText}>
+                <ThemedText style={styles.primaryBtnText}>
+                  {current.buttonText}
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
-        </View>
       </SafeAreaView>
     </View>
   );
@@ -169,67 +213,127 @@ export const OnboardingModal: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Palette.dark,
+    backgroundColor: '#091522',
     zIndex: 9980,
   },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 48, 74, 0.55)',
+
+  // Ultra-Smooth Native Linear Gradient bottom mask
+  smoothBottomGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '65%',
   },
+
   safeArea: {
     flex: 1,
     justifyContent: 'space-between',
   },
+
+  // Top Bar Layout - Soft translucent white pills floating directly over image
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)', // Reduced white opacity
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingRight: 16,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.60)',
+    ...Shadows.subtle,
   },
   logoBadge: {
-    width: 34,
-    height: 34,
+    width: 30,
+    height: 30,
     borderRadius: BorderRadius.default,
     backgroundColor: Palette.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   skipBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)', // Reduced white opacity
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.60)',
+    ...Shadows.subtle,
+  },
+  skipBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.96 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.90)',
   },
   skipBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Palette.dark,
+    letterSpacing: 0.2,
   },
-  floatingBadgesContainer: {
-    alignSelf: 'center',
+  skipSpacer: {
+    width: 50,
+  },
+
+  // Bottom Content Stack
+  bottomContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+
+  // Step Tag
+  stepTagPill: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
-    gap: Spacing.sm,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(242, 140, 40, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(242, 140, 40, 0.38)',
+  },
+  stepTagText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Palette.accent,
+    letterSpacing: 0.8,
+  },
+
+  // Step 2 Trust Badges
+  trustBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
     flexWrap: 'wrap',
-    marginTop: Spacing.md,
   },
   badgeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    gap: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingVertical: 5,
+    paddingHorizontal: 11,
     borderRadius: BorderRadius.full,
     ...Shadows.subtle,
   },
@@ -238,81 +342,83 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Palette.dark,
   },
-  bottomSheetCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-    ...Shadows.hover,
-  },
-  textSection: {
-    gap: Spacing.xs,
+
+  // Typography
+  textStack: {
+    gap: Spacing.xs + 2,
+    marginTop: 2,
   },
   title: {
-    color: Palette.dark,
-    fontSize: 24,
+    color: '#FFFFFF',
+    fontSize: 28,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 34,
+    letterSpacing: -0.4,
   },
   description: {
-    color: Palette.secondaryText,
-    fontSize: 14,
-    lineHeight: 21,
+    color: 'rgba(241, 245, 249, 0.88)',
+    fontSize: 15,
+    lineHeight: 23,
+    fontWeight: '400',
   },
-  // Centered 3 dots in the exact middle
-  centeredProgressRow: {
+
+  // Pagination Indicator
+  dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    alignSelf: 'center',
+    marginVertical: 4,
   },
   progressDot: {
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
   },
   progressDotActive: {
-    width: 24,
-    backgroundColor: Palette.primary,
+    width: 28,
+    backgroundColor: Palette.accent, // Craft Orange accent for active step
   },
   progressDotInactive: {
     width: 8,
-    backgroundColor: Palette.outlineDark,
+    backgroundColor: 'rgba(255, 255, 255, 0.30)',
   },
+
+  // Action Buttons
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
   backBtn: {
-    width: 50,
-    height: 50,
+    width: 52,
+    height: 52,
     borderRadius: BorderRadius.default,
     borderWidth: 1,
-    borderColor: Palette.outline,
-    backgroundColor: Palette.surface,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryBtn: {
     flex: 1,
-    height: 50,
+    height: 52,
     borderRadius: BorderRadius.default,
-    backgroundColor: Palette.primary,
+    backgroundColor: Palette.primary, // Artisan Blue
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Palette.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   primaryBtnText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 });
