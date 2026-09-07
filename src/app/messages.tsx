@@ -23,6 +23,7 @@ import {
   Shadows,
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import AppHeader from '@/components/AppHeader';
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -55,54 +56,8 @@ export default function MessagesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* =========================================================================
-            1. STRUCTURE & LAYOUT ARCHITECTURE: TOP NAVIGATION BAR
-        ========================================================================= */}
-        <View style={styles.topAppBar}>
-          {/* 2. Leading Branding & Screen Title (Left Section) */}
-          <View style={styles.appBarLeft}>
-            {/* Marketplace Brand Icon: rounded square (w-9 h-9 rounded-xl) in Deep Navy / Artisan Blue with crossed tools emblem */}
-            <View style={styles.brandIconBadge}>
-              <Ionicons name="construct" size={18} color="#FFFFFF" />
-            </View>
-
-            {/* Text Hierarchy */}
-            <View style={styles.titleHierarchy}>
-              <ThemedText style={styles.eyebrowTag}>MARKETPLACE</ThemedText>
-              <ThemedText style={styles.screenTitle}>
-                {isFrench ? 'Messages' : 'Messages'}
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* 3. Trailing Action Icons (Right Section) */}
-          <View style={styles.appBarRight}>
-            {/* Notification Bell */}
-            <Pressable
-              onPress={() => (isGuest ? openAuthModal() : Alert.alert('Notifications', 'No new system announcements.'))}
-              style={styles.actionIconBtn}
-              accessibilityLabel="Notifications"
-              accessibilityRole="button">
-              <Ionicons name="notifications-outline" size={20} color="#334155" />
-              {!isGuest && <View style={styles.notifDot} />}
-            </Pressable>
-
-            {/* User Profile Avatar / Account Shortcut */}
-            <Pressable
-              onPress={() => {
-                if (isGuest) {
-                  openAuthModal(() => router.push('/profile'));
-                } else {
-                  router.push('/profile');
-                }
-              }}
-              style={styles.avatarShortcutBtn}
-              accessibilityLabel="Profile settings"
-              accessibilityRole="button">
-              <Ionicons name="person" size={18} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
+        {/* Unified App Header matching Marketplace Message Tab design */}
+        <AppHeader title={isFrench ? 'Messages' : 'Messages'} eyebrow="MARKETPLACE" />
 
         {/* 4. Integrated Search & Filter Extension (Sub-Header) */}
         {!isGuest && (

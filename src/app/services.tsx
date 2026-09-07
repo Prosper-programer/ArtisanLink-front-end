@@ -23,6 +23,7 @@ import {
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, ServiceCategory } from '@/data/mockData';
+import AppHeader from '@/components/AppHeader';
 
 export default function ServicesScreen() {
   const router = useRouter();
@@ -84,19 +85,8 @@ export default function ServicesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Top Header */}
-        <View style={styles.header}>
-          <View>
-            <ThemedText type="headlineLg" style={styles.headerTitle}>
-              {isFrench ? 'Services & Métiers' : 'Services & Trades'}
-            </ThemedText>
-            <ThemedText style={styles.headerSub}>
-              {isFrench
-                ? 'Parcourez nos métiers certifiés et trouvez une assistance rapide'
-                : 'Browse verified service categories and find skilled assistance'}
-            </ThemedText>
-          </View>
-        </View>
+        {/* Unified App Header matching Marketplace Message Tab design */}
+        <AppHeader title={isFrench ? 'Services' : 'Services'} eyebrow="MARKETPLACE" />
 
         {/* Search Bar */}
         <View style={styles.searchWrap}>
@@ -275,7 +265,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   searchInputContainer: {
     flexDirection: 'row',

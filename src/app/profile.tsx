@@ -7,6 +7,7 @@ import {
   Image,
   Alert,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,8 @@ import {
   Shadows,
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import LanguageModal from '@/components/LanguageModal';
+import CountryFlag from '@/components/CountryFlag';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -43,6 +46,8 @@ export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [activeInfoModal, setActiveInfoModal] = useState<{ title: string; content: string } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
   const isGuest = authStatus === 'guest';
   const isFrench = language === 'fr';
@@ -248,7 +253,7 @@ export default function ProfileScreen() {
                   {isFrench ? 'Proposez vos compétences à la communauté' : 'Offer your skills to the community'}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={20} color={Palette.primary} />
             </Pressable>
           )}
 
@@ -303,14 +308,14 @@ export default function ProfileScreen() {
               onPress={() => setShowLanguageModal(true)}
               style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="globe-outline" size={20} color={Palette.primary} />
+                <CountryFlag country={language} size={20} />
                 <ThemedText style={styles.menuItemText}>
                   {isFrench ? 'Langue de l’application' : 'App Language'}
                 </ThemedText>
               </View>
               <View style={styles.menuItemRightValue}>
                 <ThemedText style={styles.valueText}>
-                  {language === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+                  {language === 'fr' ? 'Français' : 'English'}
                 </ThemedText>
                 <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
               </View>
@@ -425,7 +430,51 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* 9. LOGOUT (Only when authenticated) */}
+          {/* 9. DANGER ZONE (GitHub-style Account Deletion for Customer and Provider) */}
+          {!isGuest && (
+            <View style={styles.dangerZoneCard}>
+              <View style={styles.dangerZoneHeader}>
+                <Ionicons name="warning-outline" size={20} color={Palette.errorRed} />
+                <ThemedText style={styles.dangerZoneTitle}>
+                  {isFrench ? 'Zone de Danger' : 'Danger Zone'}
+                </ThemedText>
+              </View>
+
+              <View style={styles.dangerZoneContentRow}>
+                <View style={styles.dangerZoneTextWrap}>
+                  <ThemedText style={styles.dangerItemHeading}>
+                    {isFrench
+                      ? isProviderRole
+                        ? 'Supprimer le compte artisan'
+                        : 'Supprimer le compte client'
+                      : isProviderRole
+                      ? 'Delete provider account'
+                      : 'Delete customer account'}
+                  </ThemedText>
+                  <ThemedText style={styles.dangerItemSub}>
+                    {isFrench
+                      ? 'Une fois supprimé, toutes vos réservations, avis et données d’intervention seront définitivement effacés.'
+                      : 'Once you delete your account, all active requests, profile history, and verification records are gone forever.'}
+                  </ThemedText>
+                </View>
+
+                <Pressable
+                  onPress={() => {
+                    setDeleteConfirmInput('');
+                    setShowDeleteModal(true);
+                  }}
+                  style={styles.dangerDeleteBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete Account">
+                  <ThemedText style={styles.dangerDeleteBtnText}>
+                    {isFrench ? 'Supprimer' : 'Delete account'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {/* 10. LOGOUT (Only when authenticated) */}
           {!isGuest && (
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={20} color={Palette.errorRed} />
@@ -437,54 +486,10 @@ export default function ProfileScreen() {
         </ScrollView>
 
         {/* Language Modal */}
-        <Modal
+        <LanguageModal
           visible={showLanguageModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowLanguageModal(false)}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowLanguageModal(false)}>
-            <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHeader}>
-                <ThemedText style={styles.modalSheetTitle}>
-                  {isFrench ? 'Choisir la langue' : 'Select Language'}
-                </ThemedText>
-                <Pressable onPress={() => setShowLanguageModal(false)} hitSlop={8}>
-                  <Ionicons name="close" size={20} color={Palette.dark} />
-                </Pressable>
-              </View>
-
-              <Pressable
-                onPress={() => {
-                  setLanguage('en');
-                  setShowLanguageModal(false);
-                }}
-                style={[styles.langChoiceCard, language === 'en' && styles.langChoiceCardActive]}>
-                <ThemedText style={styles.langEmoji}>🇬🇧</ThemedText>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.langName}>English</ThemedText>
-                  <ThemedText style={styles.langSub}>English (US / UK)</ThemedText>
-                </View>
-                {language === 'en' && <Ionicons name="checkmark-circle" size={20} color={Palette.primary} />}
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  setLanguage('fr');
-                  setShowLanguageModal(false);
-                }}
-                style={[styles.langChoiceCard, language === 'fr' && styles.langChoiceCardActive]}>
-                <ThemedText style={styles.langEmoji}>🇫🇷</ThemedText>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={styles.langName}>Français</ThemedText>
-                  <ThemedText style={styles.langSub}>French</ThemedText>
-                </View>
-                {language === 'fr' && <Ionicons name="checkmark-circle" size={20} color={Palette.primary} />}
-              </Pressable>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          onClose={() => setShowLanguageModal(false)}
+        />
 
         {/* Info Modal for Help/About */}
         <Modal
@@ -510,6 +515,109 @@ export default function ProfileScreen() {
                   {isFrench ? 'Fermer' : 'Close'}
                 </ThemedText>
               </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        {/* GitHub-style Delete Account Confirmation Modal */}
+        <Modal
+          visible={showDeleteModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteModal(false)}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowDeleteModal(false)}>
+            <Pressable style={styles.githubDeleteModalCard} onPress={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <View style={styles.githubDeleteHeader}>
+                <View style={styles.githubDeleteHeaderTitleRow}>
+                  <Ionicons name="warning" size={20} color={Palette.errorRed} />
+                  <ThemedText style={styles.githubDeleteTitle}>
+                    {isFrench ? 'Êtes-vous absolument sûr ?' : 'Are you absolutely sure?'}
+                  </ThemedText>
+                </View>
+                <Pressable onPress={() => setShowDeleteModal(false)} hitSlop={8}>
+                  <Ionicons name="close" size={20} color={Palette.dark} />
+                </Pressable>
+              </View>
+
+              {/* Body Warning Callout */}
+              <View style={styles.githubWarningCallout}>
+                <ThemedText style={styles.githubWarningCalloutText}>
+                  {isFrench
+                    ? 'Attention : Cette action est irréversible. Toutes vos données, avis, factures et profil seront supprimés de manière permanente.'
+                    : 'Unexpected bad things will happen if you don’t read this!\n\nThis will permanently delete your account, bookings, service history, and remove all associated data.'}
+                </ThemedText>
+              </View>
+
+              {/* Confirmation Requirement */}
+              <View style={styles.githubConfirmPromptWrap}>
+                <ThemedText style={styles.githubConfirmPrompt}>
+                  {isFrench
+                    ? 'Veuillez saisir votre nom ou "DELETE" pour confirmer :'
+                    : 'Please type "DELETE" to confirm:'}
+                </ThemedText>
+                <TextInput
+                  style={styles.githubConfirmInput}
+                  value={deleteConfirmInput}
+                  onChangeText={setDeleteConfirmInput}
+                  placeholder="DELETE"
+                  placeholderTextColor={Palette.secondaryText}
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.githubDeleteActionRow}>
+                <Pressable
+                  onPress={() => {
+                    if (
+                      deleteConfirmInput.trim().toUpperCase() === 'DELETE' ||
+                      deleteConfirmInput.trim() === user.name
+                    ) {
+                      setShowDeleteModal(false);
+                      setDeleteConfirmInput('');
+                      logout();
+                      Alert.alert(
+                        isFrench ? 'Compte supprimé' : 'Account Deleted',
+                        isFrench
+                          ? 'Votre compte et toutes vos données ont été définitivement supprimés.'
+                          : 'Your account and all associated data have been permanently deleted.'
+                      );
+                    } else {
+                      Alert.alert(
+                        isFrench ? 'Confirmation requise' : 'Confirmation Required',
+                        isFrench
+                          ? 'Veuillez saisir "DELETE" pour confirmer la suppression.'
+                          : 'Please type "DELETE" to confirm deletion.'
+                      );
+                    }
+                  }}
+                  style={[
+                    styles.githubConfirmDeleteBtn,
+                    deleteConfirmInput.trim().toUpperCase() !== 'DELETE' &&
+                      deleteConfirmInput.trim() !== user.name &&
+                      styles.githubConfirmDeleteBtnDisabled,
+                  ]}>
+                  <ThemedText style={styles.githubConfirmDeleteBtnText}>
+                    {isFrench
+                      ? 'Je comprends les conséquences, supprimer mon compte'
+                      : 'I understand the consequences, delete my account'}
+                  </ThemedText>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmInput('');
+                  }}
+                  style={styles.githubCancelDeleteBtn}>
+                  <ThemedText style={styles.githubCancelDeleteBtnText}>
+                    {isFrench ? 'Annuler' : 'Cancel'}
+                  </ThemedText>
+                </Pressable>
+              </View>
             </Pressable>
           </Pressable>
         </Modal>
@@ -766,33 +874,30 @@ const styles = StyleSheet.create({
   becomeSellerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Palette.accent, // Solid warm Craft Orange (#F28C28)
-    borderRadius: BorderRadius.xl,
+    backgroundColor: Palette.accentLight,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     gap: Spacing.md,
-    shadowColor: Palette.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
   },
   sellerCardIconCircle: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)', // Semi-transparent white badge container
+    backgroundColor: Palette.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   becomeSellerTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF', // Bold white typography
+    color: Palette.dark,
   },
   becomeSellerSub: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.92)', // Soft warm-white
+    color: Palette.secondaryText,
     marginTop: 2,
     lineHeight: 16,
   },
@@ -960,5 +1065,160 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Palette.secondaryText,
     marginTop: 2,
+  },
+
+  // 9. DANGER ZONE (GitHub-style Account Deletion)
+  dangerZoneCard: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.3)', // subtle red border like GitHub danger zone
+    overflow: 'hidden',
+  },
+  dangerZoneHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(220, 38, 38, 0.2)',
+  },
+  dangerZoneTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Palette.errorRed,
+    letterSpacing: 0.2,
+  },
+  dangerZoneContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  dangerZoneTextWrap: {
+    flex: 1,
+    gap: 3,
+  },
+  dangerItemHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Palette.dark,
+  },
+  dangerItemSub: {
+    fontSize: 12,
+    color: Palette.secondaryText,
+    lineHeight: 16,
+  },
+  dangerDeleteBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1,
+    borderColor: Palette.errorRed,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dangerDeleteBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Palette.errorRed,
+  },
+
+  // GitHub-style Delete Confirmation Modal
+  githubDeleteModalCard: {
+    width: '100%',
+    maxWidth: 390,
+    backgroundColor: Palette.surface,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.4)',
+    ...Shadows.card,
+  },
+  githubDeleteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  githubDeleteHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  githubDeleteTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Palette.dark,
+  },
+  githubWarningCallout: {
+    backgroundColor: '#FEF2F2',
+    borderLeftWidth: 4,
+    borderLeftColor: Palette.errorRed,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.md,
+  },
+  githubWarningCalloutText: {
+    fontSize: 13,
+    color: '#991B1B',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  githubConfirmPromptWrap: {
+    gap: 6,
+  },
+  githubConfirmPrompt: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Palette.dark,
+  },
+  githubConfirmInput: {
+    backgroundColor: Palette.surfaceContainerLow,
+    borderWidth: 1.5,
+    borderColor: Palette.outline,
+    borderRadius: BorderRadius.default,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 14,
+    color: Palette.dark,
+    fontWeight: '700',
+  },
+  githubDeleteActionRow: {
+    gap: Spacing.sm,
+    marginTop: 4,
+  },
+  githubConfirmDeleteBtn: {
+    backgroundColor: Palette.errorRed,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  githubConfirmDeleteBtnDisabled: {
+    backgroundColor: '#FCA5A5',
+  },
+  githubConfirmDeleteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  githubCancelDeleteBtn: {
+    paddingVertical: 10,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    backgroundColor: Palette.surfaceContainerLow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  githubCancelDeleteBtnText: {
+    color: Palette.dark,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

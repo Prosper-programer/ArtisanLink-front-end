@@ -25,6 +25,7 @@ import {
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { ServiceRequest, PROFESSIONALS } from '@/data/mockData';
+import AppHeader from '@/components/AppHeader';
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -133,40 +134,8 @@ export default function RequestsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* =========================================================================
-            1. APP HEADER & GLOBAL SEARCH
-        ========================================================================= */}
-        <View style={styles.topHeader}>
-          {/* Brand & Section Hierarchy */}
-          <View style={styles.brandRow}>
-            <View style={styles.brandIconBadge}>
-              <Ionicons name="construct" size={17} color="#FFFFFF" />
-            </View>
-            <View style={styles.hierarchyWrap}>
-              <ThemedText style={styles.hierarchyParent}>Marketplace</ThemedText>
-              <ThemedText style={styles.hierarchySlash}> / </ThemedText>
-              <ThemedText style={styles.hierarchyCurrent}>Requests</ThemedText>
-            </View>
-          </View>
-
-          {/* Right-hand Utility Actions */}
-          <View style={styles.utilityActions}>
-            <Pressable
-              onPress={() => Alert.alert('Notifications', 'You have 1 live dispatch update.')}
-              style={styles.utilityBtn}
-              accessibilityLabel="Notifications">
-              <Ionicons name="notifications-outline" size={20} color={Palette.dark} />
-              <View style={styles.alertDot} />
-            </Pressable>
-
-            <Pressable
-              onPress={() => router.push('/profile')}
-              style={styles.utilityBtn}
-              accessibilityLabel="Profile">
-              <Ionicons name="person-circle-outline" size={24} color={Palette.dark} />
-            </Pressable>
-          </View>
-        </View>
+        {/* Unified App Header matching Marketplace Message Tab design */}
+        <AppHeader title={isFrench ? 'Demandes' : 'Requests'} eyebrow="MARKETPLACE" />
 
         {/* Global Search Bar & Trailing Filter Trigger (Only for authenticated users) */}
         {!isGuest && (
@@ -980,12 +949,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1.5,
     borderColor: Palette.primary,
     gap: Spacing.md,
-    ...Shadows.card,
   },
   dispatchGpsWrap: {
     width: 38,
@@ -1028,12 +996,11 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Palette.outline,
     gap: Spacing.md,
-    ...Shadows.card,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1186,8 +1153,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     paddingTop: Spacing.xs,
+    flexWrap: 'wrap',
   },
   chatActionBtn: {
+    flex: 1,
+    minWidth: 88,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1216,6 +1186,7 @@ const styles = StyleSheet.create({
   },
   primaryTrackBtn: {
     flex: 1,
+    minWidth: 160,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1223,7 +1194,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderRadius: BorderRadius.lg,
     backgroundColor: Palette.primary,
-    ...Shadows.subtle,
   },
   primaryTrackText: {
     fontSize: 13,
@@ -1232,6 +1202,7 @@ const styles = StyleSheet.create({
   },
   pendingActionGroup: {
     flex: 1,
+    minWidth: 220,
     flexDirection: 'row',
     gap: Spacing.sm,
   },
@@ -1298,12 +1269,11 @@ const styles = StyleSheet.create({
   },
   completedJobCard: {
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Palette.outline,
     gap: Spacing.sm,
-    ...Shadows.card,
   },
   completedCardTop: {
     flexDirection: 'row',
@@ -1402,7 +1372,7 @@ const styles = StyleSheet.create({
   },
   cancelledCard: {
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Palette.outline,
@@ -1450,13 +1420,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Palette.outline,
     gap: Spacing.md,
     marginTop: Spacing.xs,
-    ...Shadows.subtle,
   },
   supportIconCircle: {
     width: 44,
@@ -1653,5 +1622,76 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: Palette.secondaryText,
+  },
+  guestCard: {
+    backgroundColor: Palette.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    marginTop: Spacing.sm,
+  },
+  guestIconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Palette.surfaceContainerLow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+  },
+  guestTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Palette.dark,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  guestSub: {
+    fontSize: 13,
+    color: Palette.secondaryText,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 320,
+    marginBottom: Spacing.lg,
+  },
+  featureList: {
+    width: '100%',
+    backgroundColor: Palette.surfaceContainerLow,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  featureText: {
+    fontSize: 13,
+    color: Palette.dark,
+    fontWeight: '600',
+    flex: 1,
+  },
+  signInPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Palette.primary,
+    width: '100%',
+    paddingVertical: 13,
+    borderRadius: BorderRadius.lg,
+  },
+  signInPrimaryBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import CountryFlag from './CountryFlag';
 
 export const LanguageScreen: React.FC = () => {
   const { language, setLanguage, setAppPhase } = useApp();
@@ -51,7 +52,7 @@ export const LanguageScreen: React.FC = () => {
               language === 'en' && styles.languageCardSelected,
             ]}>
             <View style={styles.flagIconWrap}>
-              <ThemedText style={styles.flagEmoji}>🇬🇧</ThemedText>
+              <CountryFlag country="en" size={28} />
             </View>
             <View style={styles.languageTextWrap}>
               <ThemedText style={[styles.languageName, language === 'en' && styles.languageNameSelected]}>
@@ -76,7 +77,7 @@ export const LanguageScreen: React.FC = () => {
               language === 'fr' && styles.languageCardSelected,
             ]}>
             <View style={styles.flagIconWrap}>
-              <ThemedText style={styles.flagEmoji}>🇫🇷</ThemedText>
+              <CountryFlag country="fr" size={28} />
             </View>
             <View style={styles.languageTextWrap}>
               <ThemedText style={[styles.languageName, language === 'fr' && styles.languageNameSelected]}>

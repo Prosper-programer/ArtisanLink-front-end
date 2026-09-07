@@ -23,6 +23,7 @@ import {
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS } from '@/data/mockData';
+import AppHeader from '@/components/AppHeader';
 
 const TRANSLATIONS = {
   en: {
@@ -138,7 +139,6 @@ export default function HomeScreen() {
     openProviderActivation,
   } = useApp();
 
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   const isGuest = authStatus === 'guest';
@@ -164,52 +164,8 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoBadge}>
-              <Ionicons name="construct" size={18} color="#FFFFFF" />
-            </View>
-            <ThemedText style={styles.brandName}>
-              <ThemedText style={{ color: Palette.dark, fontWeight: '800' }}>Artisan</ThemedText>
-              <ThemedText style={{ color: Palette.primary, fontWeight: '800' }}>Link</ThemedText>
-            </ThemedText>
-          </View>
-
-          <View style={styles.headerIcons}>
-            {/* Language Switcher (before notification icon) */}
-            <Pressable
-              onPress={() => setShowLanguageModal(true)}
-              style={styles.langBtn}
-              accessibilityLabel="Change language"
-              accessibilityRole="button">
-              <ThemedText style={styles.langFlagEmoji}>
-                {language === 'fr' ? '🇫🇷' : '🇬🇧'}
-              </ThemedText>
-              <ThemedText style={styles.langCodeText}>
-                {language === 'fr' ? 'FR' : 'EN'}
-              </ThemedText>
-              <Ionicons name="chevron-down" size={11} color={Palette.secondaryText} />
-            </Pressable>
-
-            {/* Notification Icon */}
-            <Pressable
-              onPress={() => (isGuest ? openAuthModal() : router.push('/bookings'))}
-              style={styles.iconBtn}
-              accessibilityLabel="Notifications">
-              <Ionicons name="notifications-outline" size={20} color={Palette.dark} />
-              {!isGuest && <View style={styles.notifDot} />}
-            </Pressable>
-
-            {/* Account Icon */}
-            <Pressable
-              onPress={handleAccountIconClick}
-              style={styles.iconBtn}
-              accessibilityLabel="Account">
-              <Ionicons name="person-circle-outline" size={24} color={Palette.dark} />
-            </Pressable>
-          </View>
-        </View>
+        {/* Unified App Header */}
+        <AppHeader />
 
         <ScrollView
           style={styles.scroll}
@@ -233,11 +189,93 @@ export default function HomeScreen() {
             </ThemedText>
           </Pressable>
 
+          {/* POPULAR SERVICES SECTION (Visible to both guest and authenticated users) */}
+          <View style={styles.sectionHeader}>
+            <ThemedText type="headlineMd" style={styles.sectionTitle}>
+              {t.popularServices}
+            </ThemedText>
+            <Pressable onPress={handleViewAllServices}>
+              <ThemedText style={styles.viewAllText}>{t.viewAllServices}</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.popularServicesGrid}>
+            {POPULAR_SERVICES.slice(0, 6).map((cat) => {
+              const displayName =
+                language === 'fr' && CATEGORY_NAMES_FR[cat.id]
+                  ? CATEGORY_NAMES_FR[cat.id]
+                  : cat.name;
+              return (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => handleServiceClick(cat)}
+                  style={styles.serviceCard}>
+                  <Image source={{ uri: cat.image }} style={styles.serviceCardImg} />
+                  <View style={styles.serviceCardOverlay} />
+                  <View style={styles.serviceCardContent}>
+                    <ThemedText style={styles.serviceCardName}>{displayName}</ThemedText>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* "BECOME A SERVICE SELLER / PROVIDER" CARD (Identical for customer & guest) */}
+          {!user.isProvider && (
+            <View style={styles.sellerBannerCard}>
+              {/* Text Content */}
+              <View style={styles.sellerBannerContent}>
+                {/* Eyebrow & Icon Container Row */}
+                <View style={styles.sellerHeaderRow}>
+                  <View style={styles.sellerIconContainer}>
+                    <Ionicons name="trending-up" size={16} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.sellerEyebrowChip}>
+                    <ThemedText style={styles.sellerEyebrowText}>
+                      {t.growthOpportunity}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {/* Headline */}
+                <ThemedText style={styles.sellerBannerHeadline}>
+                  {t.becomeServiceSeller}
+                </ThemedText>
+
+                {/* Body Copy */}
+                <ThemedText style={styles.sellerBannerBody}>
+                  {t.becomeServiceSellerDesc}
+                </ThemedText>
+
+                {/* CTA Button */}
+                <Pressable
+                  onPress={openProviderActivation}
+                  style={styles.sellerBannerBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.getStartedArrow}>
+                  <ThemedText style={styles.sellerBannerBtnText}>
+                    {t.getStartedArrow}
+                  </ThemedText>
+                </Pressable>
+              </View>
+
+              {/* Authentic Artisan Craftsman Workshop Photography */}
+              <View style={styles.sellerBannerImageWrap}>
+                <Image
+                  source={{
+                    uri: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&auto=format&fit=crop&q=80',
+                  }}
+                  style={styles.sellerBannerImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+          )}
+
           {isGuest ? (
             /* =========================================================================
-                GUEST HOME EXPERIENCE:
+                GUEST HOME EXPERIENCE (Continued):
                 3. "How ArtisanLink Works" (Onboarding Flow Card)
-                Surface 3: Guest Become an Artisan Card
                 4. Trust & Account Conversion Card
             ========================================================================= */
             <>
@@ -286,32 +324,6 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              {/* Surface 3: Become an Artisan Guest Card */}
-              <View style={styles.guestSellerCard}>
-                <View style={styles.guestSellerHeaderRow}>
-                  <View style={styles.guestSellerIconBadge}>
-                    <Ionicons name="briefcase-outline" size={20} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.guestSellerTextWrap}>
-                    <ThemedText style={styles.guestSellerTitle}>
-                      {t.becomeArtisanGuest}
-                    </ThemedText>
-                    <ThemedText style={styles.guestSellerSub}>
-                      {t.becomeArtisanGuestDesc}
-                    </ThemedText>
-                  </View>
-                </View>
-
-                <Pressable
-                  onPress={openProviderActivation}
-                  style={styles.guestSellerBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.signUpAsPro}>
-                  <ThemedText style={styles.guestSellerBtnText}>{t.signUpAsPro}</ThemedText>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </Pressable>
-              </View>
-
               {/* 4. Trust & Account Conversion Card */}
               <View style={styles.trustCard}>
                 {/* Trust Eyebrow */}
@@ -345,89 +357,10 @@ export default function HomeScreen() {
             </>
           ) : (
             /* =========================================================================
-                AUTHENTICATED CUSTOMER EXPERIENCE:
-                Popular Services + Surface 1 Large Banner + Nearby Professionals
+                AUTHENTICATED CUSTOMER EXPERIENCE (Continued):
+                Nearby Professionals Section
             ========================================================================= */
             <>
-              {/* POPULAR SERVICES SECTION */}
-              <View style={styles.sectionHeader}>
-                <ThemedText type="headlineMd" style={styles.sectionTitle}>
-                  {t.popularServices}
-                </ThemedText>
-                <Pressable onPress={handleViewAllServices}>
-                  <ThemedText style={styles.viewAllText}>{t.viewAllServices}</ThemedText>
-                </Pressable>
-              </View>
-
-              <View style={styles.popularServicesGrid}>
-                {POPULAR_SERVICES.slice(0, 6).map((cat) => {
-                  const displayName =
-                    language === 'fr' && CATEGORY_NAMES_FR[cat.id]
-                      ? CATEGORY_NAMES_FR[cat.id]
-                      : cat.name;
-                  return (
-                    <Pressable
-                      key={cat.id}
-                      onPress={() => handleServiceClick(cat)}
-                      style={styles.serviceCard}>
-                      <Image source={{ uri: cat.image }} style={styles.serviceCardImg} />
-                      <View style={styles.serviceCardOverlay} />
-                      <View style={styles.serviceCardContent}>
-                        <ThemedText style={styles.serviceCardName}>{displayName}</ThemedText>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {/* SURFACE 1: LARGE BANNER CARD (HOME - SELLERS & NEARBY) */}
-              {!user.isProvider && (
-                <View style={styles.sellerBannerCard}>
-                  {/* Text Content */}
-                  <View style={styles.sellerBannerContent}>
-                    {/* Eyebrow Chip */}
-                    <View style={styles.sellerEyebrowChip}>
-                      <ThemedText style={styles.sellerEyebrowText}>
-                        {t.growthOpportunity}
-                      </ThemedText>
-                    </View>
-
-                    {/* Headline */}
-                    <ThemedText style={styles.sellerBannerHeadline}>
-                      {t.becomeServiceSeller}
-                    </ThemedText>
-
-                    {/* Body Copy */}
-                    <ThemedText style={styles.sellerBannerBody}>
-                      {t.becomeServiceSellerDesc}
-                    </ThemedText>
-
-                    {/* CTA Button */}
-                    <Pressable
-                      onPress={openProviderActivation}
-                      style={styles.sellerBannerBtn}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.getStartedArrow}>
-                      <ThemedText style={styles.sellerBannerBtnText}>
-                        {t.getStartedArrow}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-
-                  {/* Craftsman Workshop Photography */}
-                  <View style={styles.sellerBannerImageWrap}>
-                    <Image
-                      source={{
-                        uri: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=900&auto=format&fit=crop&q=80',
-                      }}
-                      style={styles.sellerBannerImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.sellerBannerImageGradientOverlay} />
-                  </View>
-                </View>
-              )}
-
               {/* NEARBY PROFESSIONALS SECTION */}
               <View style={[styles.sectionHeader, { marginTop: Spacing.md }]}>
                 <View>
@@ -481,107 +414,6 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
-
-        {/* Language Selection Modal */}
-        <Modal
-          visible={showLanguageModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowLanguageModal(false)}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowLanguageModal(false)}>
-            <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHeader}>
-                <View style={styles.modalTitleWrap}>
-                  <ThemedText style={styles.modalTitle}>
-                    {t.selectLanguage}
-                  </ThemedText>
-                  <ThemedText style={styles.modalSub}>
-                    {t.chooseLanguageSub}
-                  </ThemedText>
-                </View>
-                <Pressable
-                  onPress={() => setShowLanguageModal(false)}
-                  style={styles.modalCloseBtn}
-                  hitSlop={8}
-                  accessibilityLabel="Close">
-                  <Ionicons name="close" size={20} color={Palette.dark} />
-                </Pressable>
-              </View>
-
-              <View style={styles.modalOptionsContainer}>
-                {/* English Option */}
-                <Pressable
-                  onPress={() => {
-                    setLanguage('en');
-                    setShowLanguageModal(false);
-                  }}
-                  style={[
-                    styles.modalLangCard,
-                    language === 'en' && styles.modalLangCardSelected,
-                  ]}>
-                  <View style={styles.modalFlagWrap}>
-                    <ThemedText style={styles.modalFlagEmoji}>🇬🇧</ThemedText>
-                  </View>
-                  <View style={styles.modalLangTextWrap}>
-                    <ThemedText
-                      style={[
-                        styles.modalLangName,
-                        language === 'en' && styles.modalLangNameSelected,
-                      ]}>
-                      {t.english}
-                    </ThemedText>
-                    <ThemedText style={styles.modalLangSub}>
-                      {t.englishSub}
-                    </ThemedText>
-                  </View>
-                  <View
-                    style={[
-                      styles.modalRadio,
-                      language === 'en' && styles.modalRadioSelected,
-                    ]}>
-                    {language === 'en' && <View style={styles.modalRadioInner} />}
-                  </View>
-                </Pressable>
-
-                {/* French Option */}
-                <Pressable
-                  onPress={() => {
-                    setLanguage('fr');
-                    setShowLanguageModal(false);
-                  }}
-                  style={[
-                    styles.modalLangCard,
-                    language === 'fr' && styles.modalLangCardSelected,
-                  ]}>
-                  <View style={styles.modalFlagWrap}>
-                    <ThemedText style={styles.modalFlagEmoji}>🇫🇷</ThemedText>
-                  </View>
-                  <View style={styles.modalLangTextWrap}>
-                    <ThemedText
-                      style={[
-                        styles.modalLangName,
-                        language === 'fr' && styles.modalLangNameSelected,
-                      ]}>
-                      {t.french}
-                    </ThemedText>
-                    <ThemedText style={styles.modalLangSub}>
-                      {t.frenchSub}
-                    </ThemedText>
-                  </View>
-                  <View
-                    style={[
-                      styles.modalRadio,
-                      language === 'fr' && styles.modalRadioSelected,
-                    ]}>
-                    {language === 'fr' && <View style={styles.modalRadioInner} />}
-                  </View>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
       </SafeAreaView>
     </ThemedView>
   );
@@ -759,70 +591,94 @@ const styles = StyleSheet.create({
   },
   // SURFACE 1: LARGE BANNER CARD (HOME - SELLERS & NEARBY)
   sellerBannerCard: {
-    backgroundColor: Palette.accent,
-    borderRadius: 16, // rounded-2xl
+    backgroundColor: '#FFF7ED', // Card background: #FFF7ED
+    borderWidth: 1.5,
+    borderColor: '#FED7AA', // Border: #FED7AA
+    borderRadius: 16,
     overflow: 'hidden',
     marginTop: Spacing.xs,
-    shadowColor: Palette.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowColor: '#C2410C',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sellerBannerContent: {
     padding: Spacing.lg,
     gap: Spacing.xs,
   },
+  sellerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sellerIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Palette.accent, // Icon container: Palette.accent (#F28C28)
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Palette.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   sellerEyebrowChip: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: '#FED7AA',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: BorderRadius.full,
-    marginBottom: 4,
   },
   sellerEyebrowText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Palette.dark,
-    letterSpacing: 0.2,
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#9A3412',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   sellerBannerHeadline: {
     fontSize: 22,
     fontWeight: '900',
-    color: Palette.dark,
+    color: Palette.dark, // Title: Palette.dark (#12304A)
     lineHeight: 28,
+    letterSpacing: -0.3,
   },
   sellerBannerBody: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#332014',
+    color: Palette.secondaryText, // Description: Palette.secondaryText
     lineHeight: 19,
     marginTop: 2,
     marginBottom: Spacing.xs,
   },
   sellerBannerBtn: {
     alignSelf: 'flex-start',
-    backgroundColor: Palette.primary,
+    backgroundColor: Palette.primary, // Button: Palette.primary (#1769AA)
     paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     borderRadius: BorderRadius.default,
     shadowColor: Palette.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 3,
   },
   sellerBannerBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // Button text: #FFFFFF
     letterSpacing: 0.3,
   },
   sellerBannerImageWrap: {
     width: '100%',
     height: 160,
     position: 'relative',
+    borderTopWidth: 1,
+    borderTopColor: '#FED7AA',
   },
   sellerBannerImage: {
     width: '100%',
@@ -888,6 +744,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 2,
+  },
+  guestSellerBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   // 3. "HOW ARTISANLINK WORKS" (ONBOARDING FLOW CARD)
   howItWorksCard: {
