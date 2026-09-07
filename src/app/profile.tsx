@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -8,13 +8,13 @@ import {
   Alert,
   Modal,
   TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import {
   Palette,
   Spacing,
@@ -22,10 +22,10 @@ import {
   BottomTabInset,
   MaxContentWidth,
   Shadows,
-} from '@/constants/theme';
-import { useApp } from '@/context/AppContext';
-import LanguageModal from '@/components/LanguageModal';
-import CountryFlag from '@/components/CountryFlag';
+} from "@/constants/theme";
+import { useApp } from "@/context/AppContext";
+import LanguageModal from "@/components/LanguageModal";
+import CountryFlag from "@/components/CountryFlag";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -45,21 +45,26 @@ export default function ProfileScreen() {
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [activeInfoModal, setActiveInfoModal] = useState<{ title: string; content: string } | null>(null);
+  const [activeInfoModal, setActiveInfoModal] = useState<{
+    title: string;
+    content: string;
+  } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
 
-  const isGuest = authStatus === 'guest';
-  const isFrench = language === 'fr';
-  const isProviderRole = user.isProvider && activeRole === 'provider';
+  const isGuest = authStatus === "guest";
+  const isFrench = language === "fr";
+  const isProviderRole = user.isProvider && activeRole === "provider";
 
-  const newRequests = serviceRequests.filter((r) => r.status === 'Sent');
-  const activeJobs = serviceRequests.filter((r) => r.status === 'Accepted' || r.status === 'In Progress');
-  const completedJobs = serviceRequests.filter((r) => r.status === 'Completed');
+  const newRequests = serviceRequests.filter((r) => r.status === "Sent");
+  const activeJobs = serviceRequests.filter(
+    (r) => r.status === "Accepted" || r.status === "In Progress",
+  );
+  const completedJobs = serviceRequests.filter((r) => r.status === "Completed");
 
   const handleHelpCenter = () => {
     setActiveInfoModal({
-      title: isFrench ? 'Centre d’aide & FAQ' : 'Help Center & FAQ',
+      title: isFrench ? "Centre d’aide & FAQ" : "Help Center & FAQ",
       content: isFrench
         ? "1. Comment réserver un artisan ?\nParcourez les services ou l'onglet Explorer, sélectionnez un professionnel certifié et cliquez sur 'Demander un service'.\n\n2. Comment fonctionne le paiement ?\nLes devis sont transparents. Le paiement s'effectue directement ou de manière sécurisée une fois le travail validé.\n\n3. Quelle est la garantie ArtisanLink ?\nTous nos artisans sont rigoureusement vérifiés (qualifications, assurances et références clients)."
         : '1. How do I book a professional?\nBrowse services or the Explore tab, choose a verified artisan, and tap "Request Service".\n\n2. How do payments work?\nQuotes are clear and transparent. Payment is handled directly or securely once the job is approved.\n\n3. What is the ArtisanLink Guarantee?\nAll artisans undergo credential checks, background verification, and verified customer review assessments.',
@@ -68,52 +73,59 @@ export default function ProfileScreen() {
 
   const handleContactSupport = () => {
     setActiveInfoModal({
-      title: isFrench ? 'Contacter le Support' : 'Contact Support',
+      title: isFrench ? "Contacter le Support" : "Contact Support",
       content: isFrench
         ? "Notre équipe d'assistance est à votre écoute 7j/7.\n\n📧 Email : support@artisanlink.com\n📞 Téléphone : +1 (800) 278-4726\n💬 Chat d'aide : disponible de 08h à 20h\n\nTemps de réponse habituel : moins de 15 minutes."
-        : 'Our customer support team is available 7 days a week.\n\n📧 Email: support@artisanlink.com\n📞 Phone: +1 (800) 278-4726\n💬 Live Chat: Mon-Sun 8:00 AM - 8:00 PM\n\nTypical response time: under 15 minutes.',
+        : "Our customer support team is available 7 days a week.\n\n📧 Email: support@artisanlink.com\n📞 Phone: +1 (800) 278-4726\n💬 Live Chat: Mon-Sun 8:00 AM - 8:00 PM\n\nTypical response time: under 15 minutes.",
     });
   };
 
   const handleAboutArtisanLink = () => {
     setActiveInfoModal({
-      title: 'ArtisanLink',
+      title: "ArtisanLink",
       content: isFrench
         ? "ArtisanLink est la plateforme de référence connectant propriétaires et professionnels du bâtiment et des services artisanaux.\n\nNotre mission : rendre les travaux du quotidien simples, sûrs et transparents en valorisant les artisans locaux qualifiés."
-        : 'ArtisanLink is the premier marketplace connecting homeowners with certified local craftspeople, tradespeople, and artisans.\n\nOur mission is to make home maintenance and specialized craft services transparent, reliable, and effortless.',
+        : "ArtisanLink is the premier marketplace connecting homeowners with certified local craftspeople, tradespeople, and artisans.\n\nOur mission is to make home maintenance and specialized craft services transparent, reliable, and effortless.",
     });
   };
 
-  const handleTermsAndPrivacy = (type: 'terms' | 'privacy') => {
+  const handleTermsAndPrivacy = (type: "terms" | "privacy") => {
     setActiveInfoModal({
-      title: type === 'terms' ? (isFrench ? 'Conditions Générales' : 'Terms of Service') : (isFrench ? 'Politique de Confidentialité' : 'Privacy Policy'),
+      title:
+        type === "terms"
+          ? isFrench
+            ? "Conditions Générales"
+            : "Terms of Service"
+          : isFrench
+            ? "Politique de Confidentialité"
+            : "Privacy Policy",
       content: isFrench
-        ? 'En utilisant ArtisanLink, vous bénéficiez de garanties de protection des données conformes aux normes de sécurité les plus strictes. Vos coordonnées ne sont partagées avec les artisans que lors de la confirmation d’une intervention.'
-        : 'By using ArtisanLink, your data is protected under modern encryption standards. Contact and location information is only shared with confirmed artisans upon booking.',
+        ? "En utilisant ArtisanLink, vous bénéficiez de garanties de protection des données conformes aux normes de sécurité les plus strictes. Vos coordonnées ne sont partagées avec les artisans que lors de la confirmation d’une intervention."
+        : "By using ArtisanLink, your data is protected under modern encryption standards. Contact and location information is only shared with confirmed artisans upon booking.",
     });
   };
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         {/* Top Header */}
         <View style={styles.header}>
           <View>
             <ThemedText type="headlineLg" style={styles.headerTitle}>
-              {isFrench ? 'Compte & Paramètres' : 'Account & Settings'}
+              {isFrench ? "Compte & Paramètres" : "Account & Settings"}
             </ThemedText>
             <ThemedText style={styles.headerSub}>
               {isGuest
                 ? isFrench
-                  ? 'Connectez-vous et gérez vos préférences'
-                  : 'Manage sign-in, preferences, and support'
+                  ? "Connectez-vous et gérez vos préférences"
+                  : "Manage sign-in, preferences, and support"
                 : isProviderRole
-                ? isFrench
-                  ? 'Tableau de bord prestataire'
-                  : 'Provider business dashboard'
-                : isFrench
-                ? 'Profil client et historique'
-                : 'Customer profile and settings'}
+                  ? isFrench
+                    ? "Tableau de bord prestataire"
+                    : "Provider business dashboard"
+                  : isFrench
+                    ? "Profil client et historique"
+                    : "Customer profile and settings"}
             </ThemedText>
           </View>
 
@@ -121,18 +133,18 @@ export default function ProfileScreen() {
           {!isGuest && user.isProvider && (
             <Pressable onPress={toggleActiveRole} style={styles.roleSwitchBtn}>
               <Ionicons
-                name={isProviderRole ? 'person-outline' : 'construct-outline'}
+                name={isProviderRole ? "person-outline" : "construct-outline"}
                 size={14}
                 color={Palette.primary}
               />
               <ThemedText style={styles.roleSwitchBtnText}>
                 {isProviderRole
                   ? isFrench
-                    ? 'Vue Client'
-                    : 'Customer View'
+                    ? "Vue Client"
+                    : "Customer View"
                   : isFrench
-                  ? 'Vue Pro'
-                  : 'Provider View'}
+                    ? "Vue Pro"
+                    : "Provider View"}
               </ThemedText>
             </Pressable>
           )}
@@ -141,26 +153,38 @@ export default function ProfileScreen() {
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           {/* 1. GUEST USER HEADER / SIGN-IN CALLOUT */}
           {isGuest ? (
             <View style={styles.guestCard}>
               <View style={styles.guestAvatarWrap}>
-                <Ionicons name="person-circle-outline" size={54} color={Palette.primary} />
+                <Ionicons
+                  name="person-circle-outline"
+                  size={54}
+                  color={Palette.primary}
+                />
               </View>
               <View style={styles.guestInfo}>
                 <ThemedText type="headlineMd" style={styles.guestTitle}>
-                  {isFrench ? 'Bienvenue sur ArtisanLink' : 'Welcome to ArtisanLink'}
+                  {isFrench
+                    ? "Bienvenue sur ArtisanLink"
+                    : "Welcome to ArtisanLink"}
                 </ThemedText>
                 <ThemedText style={styles.guestSub}>
                   {isFrench
-                    ? 'Connectez-vous pour suivre vos demandes et échanger avec les artisans.'
-                    : 'Sign in or register to book services, message artisans, and manage orders.'}
+                    ? "Connectez-vous pour suivre vos demandes et échanger avec les artisans."
+                    : "Sign in or register to book services, message artisans, and manage orders."}
                 </ThemedText>
               </View>
-              <Pressable onPress={() => openAuthModal()} style={styles.signInPrimaryBtn}>
+              <Pressable
+                onPress={() => openAuthModal()}
+                style={styles.signInPrimaryBtn}
+              >
                 <ThemedText style={styles.signInPrimaryBtnText}>
-                  {isFrench ? 'Se connecter / Créer un compte' : 'Sign In / Create Account'}
+                  {isFrench
+                    ? "Se connecter / Créer un compte"
+                    : "Sign In / Create Account"}
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
               </Pressable>
@@ -169,24 +193,39 @@ export default function ProfileScreen() {
             /* 2. PROVIDER DASHBOARD VIEW */
             <View style={styles.dashboardSection}>
               <ThemedText type="headlineMd" style={styles.greetingHeader}>
-                {isFrench ? 'Bonjour' : 'Good morning'}, {user.name.split(' ')[0]} 👋
+                {isFrench ? "Bonjour" : "Good morning"},{" "}
+                {user.name.split(" ")[0]} 👋
               </ThemedText>
 
               <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
-                  <ThemedText style={styles.statLabel}>{isFrench ? 'Nouvelles demandes' : 'New Requests'}</ThemedText>
-                  <ThemedText style={styles.statValue}>{newRequests.length}</ThemedText>
+                  <ThemedText style={styles.statLabel}>
+                    {isFrench ? "Nouvelles demandes" : "New Requests"}
+                  </ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {newRequests.length}
+                  </ThemedText>
                 </View>
                 <View style={styles.statCard}>
-                  <ThemedText style={styles.statLabel}>{isFrench ? 'Missions en cours' : 'Active Jobs'}</ThemedText>
-                  <ThemedText style={styles.statValue}>{activeJobs.length}</ThemedText>
+                  <ThemedText style={styles.statLabel}>
+                    {isFrench ? "Missions en cours" : "Active Jobs"}
+                  </ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {activeJobs.length}
+                  </ThemedText>
                 </View>
                 <View style={styles.statCard}>
-                  <ThemedText style={styles.statLabel}>{isFrench ? 'Terminées' : 'Completed'}</ThemedText>
-                  <ThemedText style={styles.statValue}>{completedJobs.length + 28}</ThemedText>
+                  <ThemedText style={styles.statLabel}>
+                    {isFrench ? "Terminées" : "Completed"}
+                  </ThemedText>
+                  <ThemedText style={styles.statValue}>
+                    {completedJobs.length + 28}
+                  </ThemedText>
                 </View>
                 <View style={styles.statCard}>
-                  <ThemedText style={styles.statLabel}>{isFrench ? 'Note' : 'Rating'}</ThemedText>
+                  <ThemedText style={styles.statLabel}>
+                    {isFrench ? "Note" : "Rating"}
+                  </ThemedText>
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={15} color={Palette.gold} />
                     <ThemedText style={styles.statValue}>4.8</ThemedText>
@@ -197,15 +236,23 @@ export default function ProfileScreen() {
               {/* Incoming requests preview */}
               <View style={[styles.sectionHeader, { marginTop: Spacing.sm }]}>
                 <ThemedText type="headlineMd" style={styles.sectionTitle}>
-                  {isFrench ? 'Demandes de service récentes' : 'Recent Service Requests'}
+                  {isFrench
+                    ? "Demandes de service récentes"
+                    : "Recent Service Requests"}
                 </ThemedText>
               </View>
 
               {newRequests.length === 0 ? (
                 <View style={styles.emptyRequestsCard}>
-                  <Ionicons name="checkmark-done-circle-outline" size={28} color={Palette.success} />
+                  <Ionicons
+                    name="checkmark-done-circle-outline"
+                    size={28}
+                    color={Palette.success}
+                  />
                   <ThemedText style={styles.emptyRequestsText}>
-                    {isFrench ? 'Toutes les demandes sont traitées.' : 'All pending requests handled.'}
+                    {isFrench
+                      ? "Toutes les demandes sont traitées."
+                      : "All pending requests handled."}
                   </ThemedText>
                 </View>
               ) : (
@@ -213,12 +260,18 @@ export default function ProfileScreen() {
                   <View key={req.id} style={styles.providerReqCard}>
                     <View style={styles.reqTop}>
                       <View style={styles.reqCategoryBadge}>
-                        <ThemedText style={styles.reqCategoryText}>{req.serviceCategory}</ThemedText>
+                        <ThemedText style={styles.reqCategoryText}>
+                          {req.serviceCategory}
+                        </ThemedText>
                       </View>
                       <ThemedText style={styles.reqDate}>{req.date}</ThemedText>
                     </View>
-                    <ThemedText style={styles.reqTitle}>{req.serviceName}</ThemedText>
-                    <ThemedText style={styles.reqDesc}>{req.problemDescription}</ThemedText>
+                    <ThemedText style={styles.reqTitle}>
+                      {req.serviceName}
+                    </ThemedText>
+                    <ThemedText style={styles.reqDesc}>
+                      {req.problemDescription}
+                    </ThemedText>
                   </View>
                 ))
               )}
@@ -241,19 +294,32 @@ export default function ProfileScreen() {
               onPress={openProviderActivation}
               style={styles.becomeSellerCard}
               accessibilityRole="button"
-              accessibilityLabel={isFrench ? 'Devenir vendeur de services' : 'Become a Service Seller'}>
+              accessibilityLabel={
+                isFrench
+                  ? "Devenir vendeur de services"
+                  : "Become a Service Seller"
+              }
+            >
               <View style={styles.sellerCardIconCircle}>
                 <Ionicons name="storefront-outline" size={22} color="#FFFFFF" />
               </View>
               <View style={{ flex: 1 }}>
                 <ThemedText style={styles.becomeSellerTitle}>
-                  {isFrench ? 'Devenir vendeur de services' : 'Become a Service Seller'}
+                  {isFrench
+                    ? "Devenir vendeur de services"
+                    : "Become a Service Seller"}
                 </ThemedText>
                 <ThemedText style={styles.becomeSellerSub}>
-                  {isFrench ? 'Proposez vos compétences à la communauté' : 'Offer your skills to the community'}
+                  {isFrench
+                    ? "Proposez vos compétences à la communauté"
+                    : "Offer your skills to the community"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Palette.primary} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Palette.primary}
+              />
             </Pressable>
           )}
 
@@ -262,35 +328,68 @@ export default function ProfileScreen() {
             <View style={styles.menuSection}>
               <View style={styles.menuSectionHeader}>
                 <ThemedText style={styles.menuSectionTitle}>
-                  {isFrench ? 'Mes Activités' : 'My Activity'}
+                  {isFrench ? "Mes Activités" : "My Activity"}
                 </ThemedText>
               </View>
 
-              <Pressable onPress={() => router.push('/bookings')} style={styles.menuItem}>
+              <Pressable
+                onPress={() => router.push("/bookings")}
+                style={styles.menuItem}
+              >
                 <View style={styles.menuItemLeft}>
-                  <Ionicons name="clipboard-outline" size={20} color={Palette.primary} />
+                  <Ionicons
+                    name="clipboard-outline"
+                    size={20}
+                    color={Palette.primary}
+                  />
                   <ThemedText style={styles.menuItemText}>
-                    {isFrench ? 'Mes demandes de service' : 'My Service Requests'}
+                    {isFrench
+                      ? "Mes demandes de service"
+                      : "My Service Requests"}
                   </ThemedText>
                 </View>
                 {serviceRequests.length > 0 && (
                   <View style={styles.countPill}>
-                    <ThemedText style={styles.countPillText}>{serviceRequests.length}</ThemedText>
+                    <ThemedText style={styles.countPillText}>
+                      {serviceRequests.length}
+                    </ThemedText>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Palette.secondaryText}
+                />
               </Pressable>
 
               <Pressable
-                onPress={() => Alert.alert(isFrench ? 'Mes Avis' : 'My Reviews', isFrench ? 'Vous avez 4 avis vérifiés déposés.' : 'You have 4 verified reviews submitted.')}
-                style={styles.menuItem}>
+                onPress={() =>
+                  Alert.alert(
+                    isFrench ? "Mes Avis" : "My Reviews",
+                    isFrench
+                      ? "Vous avez 4 avis vérifiés déposés."
+                      : "You have 4 verified reviews submitted.",
+                  )
+                }
+                style={styles.menuItem}
+              >
                 <View style={styles.menuItemLeft}>
-                  <Ionicons name="star-outline" size={20} color={Palette.primary} />
+                  <Ionicons
+                    name="star-outline"
+                    size={20}
+                    color={Palette.primary}
+                  />
                   <ThemedText style={styles.menuItemText}>
-                    {isFrench ? 'Mes avis & évaluations' : 'My Reviews & Ratings'}
+                    {isFrench
+                      ? "Mes avis & évaluations"
+                      : "My Reviews & Ratings"}
                   </ThemedText>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Palette.secondaryText}
+                />
               </Pressable>
             </View>
           )}
@@ -299,41 +398,69 @@ export default function ProfileScreen() {
           <View style={styles.menuSection}>
             <View style={styles.menuSectionHeader}>
               <ThemedText style={styles.menuSectionTitle}>
-                {isFrench ? 'Paramètres' : 'Settings'}
+                {isFrench ? "Paramètres" : "Settings"}
               </ThemedText>
             </View>
 
             {/* Language Preference */}
             <Pressable
               onPress={() => setShowLanguageModal(true)}
-              style={styles.menuItem}>
+              style={styles.menuItem}
+            >
               <View style={styles.menuItemLeft}>
                 <CountryFlag country={language} size={20} />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Langue de l’application' : 'App Language'}
+                  {isFrench ? "Langue de l’application" : "App Language"}
                 </ThemedText>
               </View>
               <View style={styles.menuItemRightValue}>
                 <ThemedText style={styles.valueText}>
-                  {language === 'fr' ? 'Français' : 'English'}
+                  {language === "fr" ? "Français" : "English"}
                 </ThemedText>
-                <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Palette.secondaryText}
+                />
               </View>
             </Pressable>
 
             {/* Push Notifications Toggle */}
             <Pressable
               onPress={() => setNotificationsEnabled(!notificationsEnabled)}
-              style={styles.menuItem}>
+              style={styles.menuItem}
+            >
               <View style={styles.menuItemLeft}>
-                <Ionicons name="notifications-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Notifications d’intervention' : 'Service Notifications'}
+                  {isFrench
+                    ? "Notifications d’intervention"
+                    : "Service Notifications"}
                 </ThemedText>
               </View>
-              <View style={[styles.toggleBadge, notificationsEnabled && styles.toggleBadgeActive]}>
-                <ThemedText style={[styles.toggleBadgeText, notificationsEnabled && styles.toggleBadgeTextActive]}>
-                  {notificationsEnabled ? (isFrench ? 'Activé' : 'Enabled') : (isFrench ? 'Désactivé' : 'Disabled')}
+              <View
+                style={[
+                  styles.toggleBadge,
+                  notificationsEnabled && styles.toggleBadgeActive,
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.toggleBadgeText,
+                    notificationsEnabled && styles.toggleBadgeTextActive,
+                  ]}
+                >
+                  {notificationsEnabled
+                    ? isFrench
+                      ? "Activé"
+                      : "Enabled"
+                    : isFrench
+                      ? "Désactivé"
+                      : "Disabled"}
                 </ThemedText>
               </View>
             </Pressable>
@@ -341,13 +468,17 @@ export default function ProfileScreen() {
             {/* Theme / Appearance */}
             <View style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="color-palette-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="color-palette-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Thème visuel' : 'Appearance'}
+                  {isFrench ? "Thème visuel" : "Appearance"}
                 </ThemedText>
               </View>
               <ThemedText style={styles.valueText}>
-                {isFrench ? 'Système / Clair' : 'Light / System'}
+                {isFrench ? "Système / Clair" : "Light / System"}
               </ThemedText>
             </View>
           </View>
@@ -356,28 +487,44 @@ export default function ProfileScreen() {
           <View style={styles.menuSection}>
             <View style={styles.menuSectionHeader}>
               <ThemedText style={styles.menuSectionTitle}>
-                {isFrench ? 'Aide & Assistance' : 'Help & Support'}
+                {isFrench ? "Aide & Assistance" : "Help & Support"}
               </ThemedText>
             </View>
 
             <Pressable onPress={handleHelpCenter} style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="help-circle-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="help-circle-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Centre d’aide & FAQ' : 'Help Center & FAQ'}
+                  {isFrench ? "Centre d’aide & FAQ" : "Help Center & FAQ"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Palette.secondaryText}
+              />
             </Pressable>
 
             <Pressable onPress={handleContactSupport} style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="headset-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="headset-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Contacter le support client' : 'Contact Support'}
+                  {isFrench ? "Contacter le support client" : "Contact Support"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Palette.secondaryText}
+              />
             </Pressable>
           </View>
 
@@ -385,48 +532,89 @@ export default function ProfileScreen() {
           <View style={styles.menuSection}>
             <View style={styles.menuSectionHeader}>
               <ThemedText style={styles.menuSectionTitle}>
-                {isFrench ? 'À Propos' : 'About'}
+                {isFrench ? "À Propos" : "About"}
               </ThemedText>
             </View>
 
             <Pressable onPress={handleAboutArtisanLink} style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="information-circle-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'À propos d’ArtisanLink' : 'About ArtisanLink'}
+                  {isFrench ? "À propos d’ArtisanLink" : "About ArtisanLink"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Palette.secondaryText}
+              />
             </Pressable>
 
-            <Pressable onPress={() => handleTermsAndPrivacy('terms')} style={styles.menuItem}>
+            <Pressable
+              onPress={() => handleTermsAndPrivacy("terms")}
+              style={styles.menuItem}
+            >
               <View style={styles.menuItemLeft}>
-                <Ionicons name="document-text-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Conditions d’utilisation' : 'Terms of Service'}
+                  {isFrench ? "Conditions d’utilisation" : "Terms of Service"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Palette.secondaryText}
+              />
             </Pressable>
 
-            <Pressable onPress={() => handleTermsAndPrivacy('privacy')} style={styles.menuItem}>
+            <Pressable
+              onPress={() => handleTermsAndPrivacy("privacy")}
+              style={styles.menuItem}
+            >
               <View style={styles.menuItemLeft}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={Palette.primary} />
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={20}
+                  color={Palette.primary}
+                />
                 <ThemedText style={styles.menuItemText}>
-                  {isFrench ? 'Politique de confidentialité' : 'Privacy Policy'}
+                  {isFrench ? "Politique de confidentialité" : "Privacy Policy"}
                 </ThemedText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Palette.secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Palette.secondaryText}
+              />
             </Pressable>
 
             <View style={styles.menuItem}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name="phone-portrait-outline" size={20} color={Palette.secondaryText} />
-                <ThemedText style={[styles.menuItemText, { color: Palette.secondaryText }]}>
-                  {isFrench ? 'Version de l’application' : 'App Version'}
+                <Ionicons
+                  name="phone-portrait-outline"
+                  size={20}
+                  color={Palette.secondaryText}
+                />
+                <ThemedText
+                  style={[
+                    styles.menuItemText,
+                    { color: Palette.secondaryText },
+                  ]}
+                >
+                  {isFrench ? "Version de l’application" : "App Version"}
                 </ThemedText>
               </View>
-              <ThemedText style={styles.valueText}>v1.0.0 (Build 42)</ThemedText>
+              <ThemedText style={styles.valueText}>
+                v1.0.0 (Build 42)
+              </ThemedText>
             </View>
           </View>
 
@@ -434,9 +622,13 @@ export default function ProfileScreen() {
           {!isGuest && (
             <View style={styles.dangerZoneCard}>
               <View style={styles.dangerZoneHeader}>
-                <Ionicons name="warning-outline" size={20} color={Palette.errorRed} />
+                <Ionicons
+                  name="warning-outline"
+                  size={20}
+                  color={Palette.errorRed}
+                />
                 <ThemedText style={styles.dangerZoneTitle}>
-                  {isFrench ? 'Zone de Danger' : 'Danger Zone'}
+                  {isFrench ? "Zone de Danger" : "Danger Zone"}
                 </ThemedText>
               </View>
 
@@ -445,29 +637,30 @@ export default function ProfileScreen() {
                   <ThemedText style={styles.dangerItemHeading}>
                     {isFrench
                       ? isProviderRole
-                        ? 'Supprimer le compte artisan'
-                        : 'Supprimer le compte client'
+                        ? "Supprimer le compte artisan"
+                        : "Supprimer le compte client"
                       : isProviderRole
-                      ? 'Delete provider account'
-                      : 'Delete customer account'}
+                        ? "Delete provider account"
+                        : "Delete customer account"}
                   </ThemedText>
                   <ThemedText style={styles.dangerItemSub}>
                     {isFrench
-                      ? 'Une fois supprimé, toutes vos réservations, avis et données d’intervention seront définitivement effacés.'
-                      : 'Once you delete your account, all active requests, profile history, and verification records are gone forever.'}
+                      ? "Une fois supprimé, toutes vos réservations, avis et données d’intervention seront définitivement effacés."
+                      : "Once you delete your account, all active requests, profile history, and verification records are gone forever."}
                   </ThemedText>
                 </View>
 
                 <Pressable
                   onPress={() => {
-                    setDeleteConfirmInput('');
+                    setDeleteConfirmInput("");
                     setShowDeleteModal(true);
                   }}
                   style={styles.dangerDeleteBtn}
                   accessibilityRole="button"
-                  accessibilityLabel="Delete Account">
+                  accessibilityLabel="Delete Account"
+                >
                   <ThemedText style={styles.dangerDeleteBtnText}>
-                    {isFrench ? 'Supprimer' : 'Delete account'}
+                    {isFrench ? "Supprimer" : "Delete account"}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -477,9 +670,13 @@ export default function ProfileScreen() {
           {/* 10. LOGOUT (Only when authenticated) */}
           {!isGuest && (
             <Pressable onPress={logout} style={styles.logoutBtn}>
-              <Ionicons name="log-out-outline" size={20} color={Palette.errorRed} />
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={Palette.errorRed}
+              />
               <ThemedText style={styles.logoutBtnText}>
-                {isFrench ? 'Se déconnecter' : 'Log Out'}
+                {isFrench ? "Se déconnecter" : "Log Out"}
               </ThemedText>
             </Pressable>
           )}
@@ -496,23 +693,35 @@ export default function ProfileScreen() {
           visible={!!activeInfoModal}
           transparent
           animationType="fade"
-          onRequestClose={() => setActiveInfoModal(null)}>
+          onRequestClose={() => setActiveInfoModal(null)}
+        >
           <Pressable
             style={styles.modalBackdrop}
-            onPress={() => setActiveInfoModal(null)}>
-            <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+            onPress={() => setActiveInfoModal(null)}
+          >
+            <Pressable
+              style={styles.modalSheet}
+              onPress={(e) => e.stopPropagation()}
+            >
               <View style={styles.modalHeader}>
-                <ThemedText style={styles.modalSheetTitle}>{activeInfoModal?.title}</ThemedText>
+                <ThemedText style={styles.modalSheetTitle}>
+                  {activeInfoModal?.title}
+                </ThemedText>
                 <Pressable onPress={() => setActiveInfoModal(null)} hitSlop={8}>
                   <Ionicons name="close" size={20} color={Palette.dark} />
                 </Pressable>
               </View>
               <ScrollView style={{ maxHeight: 350 }}>
-                <ThemedText style={styles.modalSheetContent}>{activeInfoModal?.content}</ThemedText>
+                <ThemedText style={styles.modalSheetContent}>
+                  {activeInfoModal?.content}
+                </ThemedText>
               </ScrollView>
-              <Pressable onPress={() => setActiveInfoModal(null)} style={styles.modalDoneBtn}>
+              <Pressable
+                onPress={() => setActiveInfoModal(null)}
+                style={styles.modalDoneBtn}
+              >
                 <ThemedText style={styles.modalDoneBtnText}>
-                  {isFrench ? 'Fermer' : 'Close'}
+                  {isFrench ? "Fermer" : "Close"}
                 </ThemedText>
               </Pressable>
             </Pressable>
@@ -524,20 +733,30 @@ export default function ProfileScreen() {
           visible={showDeleteModal}
           transparent
           animationType="fade"
-          onRequestClose={() => setShowDeleteModal(false)}>
+          onRequestClose={() => setShowDeleteModal(false)}
+        >
           <Pressable
             style={styles.modalBackdrop}
-            onPress={() => setShowDeleteModal(false)}>
-            <Pressable style={styles.githubDeleteModalCard} onPress={(e) => e.stopPropagation()}>
+            onPress={() => setShowDeleteModal(false)}
+          >
+            <Pressable
+              style={styles.githubDeleteModalCard}
+              onPress={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <View style={styles.githubDeleteHeader}>
                 <View style={styles.githubDeleteHeaderTitleRow}>
                   <Ionicons name="warning" size={20} color={Palette.errorRed} />
                   <ThemedText style={styles.githubDeleteTitle}>
-                    {isFrench ? 'Êtes-vous absolument sûr ?' : 'Are you absolutely sure?'}
+                    {isFrench
+                      ? "Êtes-vous absolument sûr ?"
+                      : "Are you absolutely sure?"}
                   </ThemedText>
                 </View>
-                <Pressable onPress={() => setShowDeleteModal(false)} hitSlop={8}>
+                <Pressable
+                  onPress={() => setShowDeleteModal(false)}
+                  hitSlop={8}
+                >
                   <Ionicons name="close" size={20} color={Palette.dark} />
                 </Pressable>
               </View>
@@ -546,8 +765,8 @@ export default function ProfileScreen() {
               <View style={styles.githubWarningCallout}>
                 <ThemedText style={styles.githubWarningCalloutText}>
                   {isFrench
-                    ? 'Attention : Cette action est irréversible. Toutes vos données, avis, factures et profil seront supprimés de manière permanente.'
-                    : 'Unexpected bad things will happen if you don’t read this!\n\nThis will permanently delete your account, bookings, service history, and remove all associated data.'}
+                    ? "Attention : Cette action est irréversible. Toutes vos données, avis, factures et profil seront supprimés de manière permanente."
+                    : "Unexpected bad things will happen if you don’t read this!\n\nThis will permanently delete your account, bookings, service history, and remove all associated data."}
                 </ThemedText>
               </View>
 
@@ -573,48 +792,52 @@ export default function ProfileScreen() {
                 <Pressable
                   onPress={() => {
                     if (
-                      deleteConfirmInput.trim().toUpperCase() === 'DELETE' ||
+                      deleteConfirmInput.trim().toUpperCase() === "DELETE" ||
                       deleteConfirmInput.trim() === user.name
                     ) {
                       setShowDeleteModal(false);
-                      setDeleteConfirmInput('');
+                      setDeleteConfirmInput("");
                       logout();
                       Alert.alert(
-                        isFrench ? 'Compte supprimé' : 'Account Deleted',
+                        isFrench ? "Compte supprimé" : "Account Deleted",
                         isFrench
-                          ? 'Votre compte et toutes vos données ont été définitivement supprimés.'
-                          : 'Your account and all associated data have been permanently deleted.'
+                          ? "Votre compte et toutes vos données ont été définitivement supprimés."
+                          : "Your account and all associated data have been permanently deleted.",
                       );
                     } else {
                       Alert.alert(
-                        isFrench ? 'Confirmation requise' : 'Confirmation Required',
+                        isFrench
+                          ? "Confirmation requise"
+                          : "Confirmation Required",
                         isFrench
                           ? 'Veuillez saisir "DELETE" pour confirmer la suppression.'
-                          : 'Please type "DELETE" to confirm deletion.'
+                          : 'Please type "DELETE" to confirm deletion.',
                       );
                     }
                   }}
                   style={[
                     styles.githubConfirmDeleteBtn,
-                    deleteConfirmInput.trim().toUpperCase() !== 'DELETE' &&
+                    deleteConfirmInput.trim().toUpperCase() !== "DELETE" &&
                       deleteConfirmInput.trim() !== user.name &&
                       styles.githubConfirmDeleteBtnDisabled,
-                  ]}>
+                  ]}
+                >
                   <ThemedText style={styles.githubConfirmDeleteBtnText}>
                     {isFrench
-                      ? 'Je comprends les conséquences, supprimer mon compte'
-                      : 'I understand the consequences, delete my account'}
+                      ? "Je comprends les conséquences, supprimer mon compte"
+                      : "I understand the consequences, delete my account"}
                   </ThemedText>
                 </Pressable>
 
                 <Pressable
                   onPress={() => {
                     setShowDeleteModal(false);
-                    setDeleteConfirmInput('');
+                    setDeleteConfirmInput("");
                   }}
-                  style={styles.githubCancelDeleteBtn}>
+                  style={styles.githubCancelDeleteBtn}
+                >
                   <ThemedText style={styles.githubCancelDeleteBtnText}>
-                    {isFrench ? 'Annuler' : 'Cancel'}
+                    {isFrench ? "Annuler" : "Cancel"}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -633,13 +856,13 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
@@ -649,7 +872,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
     letterSpacing: -0.4,
   },
@@ -659,8 +882,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleSwitchBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -671,17 +894,17 @@ const styles = StyleSheet.create({
   },
   roleSwitchBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.primary,
   },
   scroll: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   scrollContent: {
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: BottomTabInset + Spacing.xl + 20,
@@ -693,7 +916,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Palette.outline,
-    alignItems: 'center',
+    alignItems: "center",
     gap: Spacing.sm,
     ...Shadows.card,
   },
@@ -702,45 +925,45 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     backgroundColor: Palette.surfaceContainerLow,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   guestInfo: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   guestTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
-    textAlign: 'center',
+    textAlign: "center",
   },
   guestSub: {
     fontSize: 13,
     color: Palette.secondaryText,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 18,
     maxWidth: 280,
   },
   signInPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     backgroundColor: Palette.primary,
-    width: '100%',
+    width: "100%",
     paddingVertical: 12,
     borderRadius: BorderRadius.lg,
     marginTop: 6,
   },
   signInPrimaryBtnText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.lg,
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.xl,
@@ -759,7 +982,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   userPhone: {
@@ -776,11 +999,11 @@ const styles = StyleSheet.create({
   },
   greetingHeader: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   statsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   statCard: {
@@ -790,38 +1013,38 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Palette.outline,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statLabel: {
     fontSize: 11,
     color: Palette.secondaryText,
-    textAlign: 'center',
+    textAlign: "center",
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
     marginTop: 4,
   },
   ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 3,
     marginTop: 4,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   emptyRequestsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     backgroundColor: Palette.surface,
     padding: Spacing.md,
@@ -842,9 +1065,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reqTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   reqCategoryBadge: {
     backgroundColor: Palette.surfaceContainerLow,
@@ -854,7 +1077,7 @@ const styles = StyleSheet.create({
   },
   reqCategoryText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.primary,
   },
   reqDate: {
@@ -863,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   reqTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
     marginTop: 2,
   },
@@ -872,31 +1095,31 @@ const styles = StyleSheet.create({
     color: Palette.secondaryText,
   },
   becomeSellerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Palette.accentLight,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: "#FED7AA",
   },
   sellerCardIconCircle: {
     width: 46,
     height: 46,
     borderRadius: 23,
     backgroundColor: Palette.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   becomeSellerTitle: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   becomeSellerSub: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: Palette.secondaryText,
     marginTop: 2,
     lineHeight: 16,
@@ -906,7 +1129,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: Palette.outline,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Shadows.subtle,
   },
   menuSectionHeader: {
@@ -916,39 +1139,39 @@ const styles = StyleSheet.create({
   },
   menuSectionTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.secondaryText,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
     paddingVertical: 13,
     borderTopWidth: 1,
     borderTopColor: Palette.outline,
   },
   menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     flex: 1,
   },
   menuItemText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Palette.dark,
   },
   menuItemRightValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   valueText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Palette.secondaryText,
   },
   countPill: {
@@ -959,9 +1182,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   countPillText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   toggleBadge: {
     paddingHorizontal: 9,
@@ -974,16 +1197,16 @@ const styles = StyleSheet.create({
   },
   toggleBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.secondaryText,
   },
   toggleBadgeTextActive: {
     color: Palette.success,
   },
   logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     backgroundColor: Palette.surface,
     paddingVertical: 14,
@@ -994,18 +1217,18 @@ const styles = StyleSheet.create({
   },
   logoutBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.errorRed,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.lg,
   },
   modalSheet: {
-    width: '100%',
+    width: "100%",
     maxWidth: 380,
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.xl,
@@ -1014,13 +1237,13 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   modalSheetTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   modalSheetContent: {
@@ -1032,16 +1255,16 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.primary,
     paddingVertical: 12,
     borderRadius: BorderRadius.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalDoneBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: "#FFFFFF",
+    fontWeight: "700",
     fontSize: 14,
   },
   langChoiceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1.5,
@@ -1058,7 +1281,7 @@ const styles = StyleSheet.create({
   },
   langName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
   },
   langSub: {
@@ -1069,32 +1292,32 @@ const styles = StyleSheet.create({
 
   // 9. DANGER ZONE (GitHub-style Account Deletion)
   dangerZoneCard: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: "#FFF5F5",
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.3)', // subtle red border like GitHub danger zone
-    overflow: 'hidden',
+    borderColor: "rgba(220, 38, 38, 0.3)", // subtle red border like GitHub danger zone
+    overflow: "hidden",
   },
   dangerZoneHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: Spacing.md,
     paddingVertical: 10,
-    backgroundColor: 'rgba(220, 38, 38, 0.08)',
+    backgroundColor: "rgba(220, 38, 38, 0.08)",
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(220, 38, 38, 0.2)',
+    borderBottomColor: "rgba(220, 38, 38, 0.2)",
   },
   dangerZoneTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.errorRed,
     letterSpacing: 0.2,
   },
   dangerZoneContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: Spacing.md,
     gap: Spacing.md,
   },
@@ -1104,7 +1327,7 @@ const styles = StyleSheet.create({
   },
   dangerItemHeading: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
   },
   dangerItemSub: {
@@ -1118,45 +1341,45 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.default,
     borderWidth: 1,
     borderColor: Palette.errorRed,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   dangerDeleteBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.errorRed,
   },
 
   // GitHub-style Delete Confirmation Modal
   githubDeleteModalCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 390,
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(220, 38, 38, 0.4)',
+    borderColor: "rgba(220, 38, 38, 0.4)",
     ...Shadows.card,
   },
   githubDeleteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   githubDeleteHeaderTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   githubDeleteTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
   },
   githubWarningCallout: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: "#FEF2F2",
     borderLeftWidth: 4,
     borderLeftColor: Palette.errorRed,
     borderRadius: BorderRadius.sm,
@@ -1164,16 +1387,16 @@ const styles = StyleSheet.create({
   },
   githubWarningCalloutText: {
     fontSize: 13,
-    color: '#991B1B',
+    color: "#991B1B",
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   githubConfirmPromptWrap: {
     gap: 6,
   },
   githubConfirmPrompt: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
   },
   githubConfirmInput: {
@@ -1185,7 +1408,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     fontSize: 14,
     color: Palette.dark,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   githubDeleteActionRow: {
     gap: Spacing.sm,
@@ -1195,17 +1418,17 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.errorRed,
     paddingVertical: 12,
     borderRadius: BorderRadius.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   githubConfirmDeleteBtnDisabled: {
-    backgroundColor: '#FCA5A5',
+    backgroundColor: "#FCA5A5",
   },
   githubConfirmDeleteBtnText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
   githubCancelDeleteBtn: {
     paddingVertical: 10,
@@ -1213,12 +1436,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Palette.outline,
     backgroundColor: Palette.surfaceContainerLow,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   githubCancelDeleteBtnText: {
     color: Palette.dark,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

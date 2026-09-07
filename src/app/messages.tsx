@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -7,13 +7,13 @@ import {
   Image,
   TextInput,
   Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import {
   Palette,
   Spacing,
@@ -21,18 +21,18 @@ import {
   BottomTabInset,
   MaxContentWidth,
   Shadows,
-} from '@/constants/theme';
-import { useApp } from '@/context/AppContext';
-import AppHeader from '@/components/AppHeader';
+} from "@/constants/theme";
+import { useApp } from "@/context/AppContext";
+import AppHeader from "@/components/AppHeader";
 
 export default function MessagesScreen() {
   const router = useRouter();
   const { chats, openChat, authStatus, openAuthModal, language } = useApp();
 
-  const isGuest = authStatus === 'guest';
-  const isFrench = language === 'fr';
+  const isGuest = authStatus === "guest";
+  const isFrench = language === "fr";
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterActive, setFilterActive] = useState(false);
 
   const filteredChats = useMemo(() => {
@@ -43,7 +43,7 @@ export default function MessagesScreen() {
         (c) =>
           c.professionalName.toLowerCase().includes(q) ||
           c.professionalProfession.toLowerCase().includes(q) ||
-          c.lastMessage.toLowerCase().includes(q)
+          c.lastMessage.toLowerCase().includes(q),
       );
     }
     if (filterActive) {
@@ -55,9 +55,12 @@ export default function MessagesScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         {/* Unified App Header matching Marketplace Message Tab design */}
-        <AppHeader title={isFrench ? 'Messages' : 'Messages'} eyebrow="MARKETPLACE" />
+        <AppHeader
+          title={isFrench ? "Messages" : "Messages"}
+          eyebrow="MARKETPLACE"
+        />
 
         {/* 4. Integrated Search & Filter Extension (Sub-Header) */}
         {!isGuest && (
@@ -75,8 +78,12 @@ export default function MessagesScreen() {
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery('')} hitSlop={6}>
-                  <Ionicons name="close-circle" size={18} color={Palette.secondaryText} />
+                <Pressable onPress={() => setSearchQuery("")} hitSlop={6}>
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={Palette.secondaryText}
+                  />
                 </Pressable>
               )}
             </View>
@@ -84,9 +91,13 @@ export default function MessagesScreen() {
             {/* Filter Action Button */}
             <Pressable
               onPress={() => setFilterActive(!filterActive)}
-              style={[styles.filterActionBtn, filterActive && styles.filterActionBtnActive]}
+              style={[
+                styles.filterActionBtn,
+                filterActive && styles.filterActionBtnActive,
+              ]}
               accessibilityLabel="Filters"
-              accessibilityRole="button">
+              accessibilityRole="button"
+            >
               <Ionicons
                 name="options-outline"
                 size={20}
@@ -100,72 +111,100 @@ export default function MessagesScreen() {
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           {isGuest ? (
             /* Dedicated Sign-in / Create Account Prompt */
             <View style={styles.guestCard}>
               <View style={styles.guestIconCircle}>
-                <Ionicons name="chatbubbles" size={40} color={Palette.primary} />
+                <Ionicons
+                  name="chatbubbles"
+                  size={40}
+                  color={Palette.primary}
+                />
               </View>
 
               <ThemedText type="headlineMd" style={styles.guestTitle}>
-                {isFrench ? 'Connectez-vous pour échanger' : 'Sign in to use Messaging'}
+                {isFrench
+                  ? "Connectez-vous pour échanger"
+                  : "Sign in to use Messaging"}
               </ThemedText>
 
               <ThemedText style={styles.guestSub}>
                 {isFrench
-                  ? 'Créez un compte gratuit ou connectez-vous pour chatter directement avec vos artisans, envoyer des photos de travaux et recevoir des devis personnalisés.'
-                  : 'Create a free account or sign in to chat directly with verified local artisans, send repair photos, and receive instant estimates.'}
+                  ? "Créez un compte gratuit ou connectez-vous pour chatter directement avec vos artisans, envoyer des photos de travaux et recevoir des devis personnalisés."
+                  : "Create a free account or sign in to chat directly with verified local artisans, send repair photos, and receive instant estimates."}
               </ThemedText>
 
               {/* Value proposition badges */}
               <View style={styles.featureList}>
                 <View style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color={Palette.success}
+                  />
                   <ThemedText style={styles.featureText}>
                     {isFrench
-                      ? 'Discussions directes avec les artisans'
-                      : 'Direct 1-on-1 chat with verified artisans'}
+                      ? "Discussions directes avec les artisans"
+                      : "Direct 1-on-1 chat with verified artisans"}
                   </ThemedText>
                 </View>
 
                 <View style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color={Palette.success}
+                  />
                   <ThemedText style={styles.featureText}>
                     {isFrench
-                      ? 'Partage de photos et diagnostics de panne'
-                      : 'Send photos of issues & repair diagnostics'}
+                      ? "Partage de photos et diagnostics de panne"
+                      : "Send photos of issues & repair diagnostics"}
                   </ThemedText>
                 </View>
 
                 <View style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color={Palette.success}
+                  />
                   <ThemedText style={styles.featureText}>
                     {isFrench
-                      ? 'Mises à jour d’arrivée et devis transparents'
-                      : 'Real-time arrival updates & transparent estimates'}
+                      ? "Mises à jour d’arrivée et devis transparents"
+                      : "Real-time arrival updates & transparent estimates"}
                   </ThemedText>
                 </View>
               </View>
 
               {/* Sign In / Create Account Button */}
-              <Pressable onPress={() => openAuthModal()} style={styles.signInPrimaryBtn}>
+              <Pressable
+                onPress={() => openAuthModal()}
+                style={styles.signInPrimaryBtn}
+              >
                 <ThemedText style={styles.signInPrimaryBtnText}>
-                  {isFrench ? 'Se connecter / Créer un compte' : 'Sign In / Create Account'}
+                  {isFrench
+                    ? "Se connecter / Créer un compte"
+                    : "Sign In / Create Account"}
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
               </Pressable>
             </View>
           ) : filteredChats.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="chatbox-ellipses-outline" size={48} color={Palette.secondaryText} />
+              <Ionicons
+                name="chatbox-ellipses-outline"
+                size={48}
+                color={Palette.secondaryText}
+              />
               <ThemedText style={styles.emptyTitle}>
-                {isFrench ? 'Aucun message trouvé' : 'No messages found'}
+                {isFrench ? "Aucun message trouvé" : "No messages found"}
               </ThemedText>
               <ThemedText style={styles.emptySub}>
                 {isFrench
-                  ? 'Essayez de modifier vos critères de recherche ou réinitialisez le filtre.'
-                  : 'Try changing your search keywords or clear the active filter.'}
+                  ? "Essayez de modifier vos critères de recherche ou réinitialisez le filtre."
+                  : "Try changing your search keywords or clear the active filter."}
               </ThemedText>
             </View>
           ) : (
@@ -173,18 +212,28 @@ export default function MessagesScreen() {
               <Pressable
                 key={chat.id}
                 onPress={() => openChat(chat.id)}
-                style={styles.chatCard}>
+                style={styles.chatCard}
+              >
                 <View style={styles.avatarWrap}>
-                  <Image source={{ uri: chat.professionalAvatar }} style={styles.avatar} />
+                  <Image
+                    source={{ uri: chat.professionalAvatar }}
+                    style={styles.avatar}
+                  />
                   {chat.online && <View style={styles.onlineDot} />}
                 </View>
 
                 <View style={styles.chatInfo}>
                   <View style={styles.chatHeaderRow}>
-                    <ThemedText style={styles.proName}>{chat.professionalName}</ThemedText>
-                    <ThemedText style={styles.timeText}>{chat.lastMessageTime}</ThemedText>
+                    <ThemedText style={styles.proName}>
+                      {chat.professionalName}
+                    </ThemedText>
+                    <ThemedText style={styles.timeText}>
+                      {chat.lastMessageTime}
+                    </ThemedText>
                   </View>
-                  <ThemedText style={styles.proProfession}>{chat.professionalProfession}</ThemedText>
+                  <ThemedText style={styles.proProfession}>
+                    {chat.professionalProfession}
+                  </ThemedText>
                   <ThemedText style={styles.lastMsgText} numberOfLines={1}>
                     {chat.lastMessage}
                   </ThemedText>
@@ -192,7 +241,9 @@ export default function MessagesScreen() {
 
                 {chat.unreadCount > 0 && (
                   <View style={styles.unreadBadge}>
-                    <ThemedText style={styles.unreadBadgeText}>{chat.unreadCount}</ThemedText>
+                    <ThemedText style={styles.unreadBadgeText}>
+                      {chat.unreadCount}
+                    </ThemedText>
                   </View>
                 )}
               </Pressable>
@@ -211,24 +262,24 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   // 1. TOP APP BAR / HEADER BAR (h-14 / h-16, docked full-width at top-0, border-b border-outline-variant)
   topAppBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF', // Crisp, clean surface (bg-white / bg-surface)
+    backgroundColor: "#FFFFFF", // Crisp, clean surface (bg-white / bg-surface)
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0', // #E2E8F0 divider line
+    borderBottomColor: "#E2E8F0", // #E2E8F0 divider line
   },
   appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   // Marketplace Brand Icon: w-9 h-9 rounded-xl in Deep Navy / Artisan Blue (#12304A / #1769AA) with crossed tools
@@ -237,41 +288,41 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 12,
     backgroundColor: Palette.dark, // #12304A
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   titleHierarchy: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   // Eyebrow Tag: text-xs font-semibold tracking-wider text-slate-500
   eyebrowTag: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B', // text-slate-500
+    fontWeight: "700",
+    color: "#64748B", // text-slate-500
     letterSpacing: 1.1,
   },
   // Screen Title: text-xl font-bold text-slate-900 / #12304A
   screenTitle: {
     fontSize: 20,
-    fontWeight: '800',
-    color: '#12304A',
+    fontWeight: "800",
+    color: "#12304A",
     letterSpacing: -0.4,
   },
   appBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   actionIconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   notifDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 6,
     right: 6,
     width: 8,
@@ -279,7 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Palette.accent,
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   // Circular avatar button: w-9 h-9 rounded-full bg-primary / #1769AA text-white
   avatarShortcutBtn: {
@@ -287,32 +338,32 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: Palette.primary, // #1769AA
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // 4. INTEGRATED SEARCH & FILTER EXTENSION (SUB-HEADER)
   subHeaderSearchSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
-    width: '100%',
+    width: "100%",
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: "#F1F5F9",
   },
   // Full-width pill-shaped search input (bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5)
   searchBarWrap: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 42,
@@ -328,19 +379,19 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   filterActionBtnActive: {
     borderColor: Palette.primary,
     backgroundColor: Palette.surfaceContainerLow,
   },
   filterActiveDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
     width: 7,
@@ -350,12 +401,12 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   scrollContent: {
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: BottomTabInset + Spacing.xl + 20,
@@ -365,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Palette.outline,
     marginTop: Spacing.sm,
@@ -376,29 +427,29 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     backgroundColor: Palette.surfaceContainerLow,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Palette.outline,
   },
   guestTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Palette.dark,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.xs,
   },
   guestSub: {
     fontSize: 13,
     color: Palette.secondaryText,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
     maxWidth: 320,
     marginBottom: Spacing.lg,
   },
   featureList: {
-    width: '100%',
+    width: "100%",
     backgroundColor: Palette.surfaceContainerLow,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
@@ -408,52 +459,52 @@ const styles = StyleSheet.create({
     borderColor: Palette.outline,
   },
   featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   featureText: {
     fontSize: 13,
     color: Palette.dark,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   signInPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: Spacing.sm,
     backgroundColor: Palette.primary,
-    width: '100%',
+    width: "100%",
     paddingVertical: 14,
     borderRadius: BorderRadius.lg,
     ...Shadows.subtle,
   },
   signInPrimaryBtnText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
     gap: Spacing.sm,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
   },
   emptySub: {
     fontSize: 13,
     color: Palette.secondaryText,
-    textAlign: 'center',
+    textAlign: "center",
     maxWidth: 300,
   },
   chatCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.xl,
@@ -463,7 +514,7 @@ const styles = StyleSheet.create({
     ...Shadows.subtle,
   },
   avatarWrap: {
-    position: 'relative',
+    position: "relative",
   },
   avatar: {
     width: 50,
@@ -471,7 +522,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   onlineDot: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 2,
     right: 2,
     width: 12,
@@ -485,13 +536,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   proName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
   },
   timeText: {
@@ -501,7 +552,7 @@ const styles = StyleSheet.create({
   proProfession: {
     fontSize: 12,
     color: Palette.primary,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 1,
   },
   lastMsgText: {
@@ -514,13 +565,13 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 4,
   },
   unreadBadgeText: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
 });

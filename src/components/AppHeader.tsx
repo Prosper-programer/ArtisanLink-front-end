@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
-import { Palette, Spacing, BorderRadius, MaxContentWidth } from '@/constants/theme';
-import { useApp } from '@/context/AppContext';
-import LanguageModal from './LanguageModal';
-import CountryFlag from './CountryFlag';
+import React, { useState } from "react";
+import { View, StyleSheet, Pressable } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { ThemedText } from "@/components/themed-text";
+import {
+  Palette,
+  Spacing,
+  BorderRadius,
+  MaxContentWidth,
+} from "@/constants/theme";
+import { useApp } from "@/context/AppContext";
+import LanguageModal from "./LanguageModal";
+import CountryFlag from "./CountryFlag";
 
 interface AppHeaderProps {
   title?: string;
@@ -17,7 +22,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({
   title,
-  eyebrow = 'MARKETPLACE',
+  eyebrow = "MARKETPLACE",
   onNotificationPress,
   hasNotificationDot,
 }: AppHeaderProps) {
@@ -25,16 +30,17 @@ export default function AppHeader({
   const { authStatus, openAuthModal, language } = useApp();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
-  const isGuest = authStatus === 'guest';
-  const showDot = hasNotificationDot !== undefined ? hasNotificationDot : !isGuest;
+  const isGuest = authStatus === "guest";
+  const showDot =
+    hasNotificationDot !== undefined ? hasNotificationDot : !isGuest;
 
   const handleAccountIconClick = () => {
     if (isGuest) {
       openAuthModal(() => {
-        router.push('/profile');
+        router.push("/profile");
       });
     } else {
-      router.push('/profile');
+      router.push("/profile");
     }
   };
 
@@ -44,7 +50,7 @@ export default function AppHeader({
     } else if (isGuest) {
       openAuthModal();
     } else {
-      router.push('/bookings');
+      router.push("/bookings");
     }
   };
 
@@ -64,16 +70,21 @@ export default function AppHeader({
           </View>
         ) : (
           <Pressable
-            onPress={() => router.push('/')}
+            onPress={() => router.push("/")}
             style={styles.brandRow}
             accessibilityLabel="ArtisanLink Home"
-            accessibilityRole="link">
+            accessibilityRole="link"
+          >
             <View style={styles.brandIconBadge}>
               <Ionicons name="construct" size={18} color="#FFFFFF" />
             </View>
             <ThemedText style={styles.brandName}>
-              <ThemedText style={{ color: Palette.dark, fontWeight: '800' }}>Artisan</ThemedText>
-              <ThemedText style={{ color: Palette.primary, fontWeight: '800' }}>Link</ThemedText>
+              <ThemedText style={{ color: Palette.dark, fontWeight: "800" }}>
+                Artisan
+              </ThemedText>
+              <ThemedText style={{ color: Palette.primary, fontWeight: "800" }}>
+                Link
+              </ThemedText>
             </ThemedText>
           </Pressable>
         )}
@@ -85,12 +96,17 @@ export default function AppHeader({
             onPress={() => setShowLanguageModal(true)}
             style={styles.langBtn}
             accessibilityLabel="Change language"
-            accessibilityRole="button">
+            accessibilityRole="button"
+          >
             <CountryFlag country={language} size={18} />
             <ThemedText style={styles.langCodeText}>
-              {language === 'fr' ? 'FR' : 'EN'}
+              {language === "fr" ? "FR" : "EN"}
             </ThemedText>
-            <Ionicons name="chevron-down" size={11} color={Palette.secondaryText} />
+            <Ionicons
+              name="chevron-down"
+              size={11}
+              color={Palette.secondaryText}
+            />
           </Pressable>
 
           {/* Notification Bell with alert dot indicator */}
@@ -98,7 +114,8 @@ export default function AppHeader({
             onPress={handleNotificationClick}
             style={styles.actionIconBtn}
             accessibilityLabel="Notifications"
-            accessibilityRole="button">
+            accessibilityRole="button"
+          >
             <Ionicons name="notifications-outline" size={20} color="#334155" />
             {showDot && <View style={styles.notifDot} />}
           </Pressable>
@@ -108,8 +125,13 @@ export default function AppHeader({
             onPress={handleAccountIconClick}
             style={styles.actionIconBtn}
             accessibilityLabel="Account profile"
-            accessibilityRole="button">
-            <Ionicons name="person-circle-outline" size={24} color={Palette.dark} />
+            accessibilityRole="button"
+          >
+            <Ionicons
+              name="person-circle-outline"
+              size={24}
+              color={Palette.dark}
+            />
           </Pressable>
         </View>
       </View>
@@ -126,27 +148,27 @@ export default function AppHeader({
 const styles = StyleSheet.create({
   // 1. TOP APP BAR / HEADER BAR (docked full-width, clean divider)
   topAppBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     maxWidth: MaxContentWidth,
-    alignSelf: 'center',
+    alignSelf: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: "#E2E8F0",
   },
   appBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     flexShrink: 1,
   },
   brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   // Marketplace Brand Icon: w-9 h-9 rounded-xl in Deep Navy with crossed tools
@@ -155,29 +177,29 @@ const styles = StyleSheet.create({
     height: 39,
     borderRadius: 12,
     backgroundColor: Palette.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   titleHierarchy: {
-    justifyContent: 'center',
+    justifyContent: "center",
     gap: 0,
     flexShrink: 1,
   },
   // Eyebrow Tag: text-xs font-semibold tracking-wider text-slate-500
   eyebrowTag: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     lineHeight: 11,
-    color: '#64748B',
+    color: "#64748B",
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   // Screen Title: text-xl font-bold text-slate-900 / #12304A
   screenTitle: {
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '800',
-    color: '#12304A',
+    fontWeight: "800",
+    color: "#12304A",
     letterSpacing: 0,
   },
   brandName: {
@@ -185,8 +207,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   appBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   langBtn: {
@@ -194,18 +216,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: 18,
     backgroundColor: Palette.surfaceContainerLow,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   langFlagEmoji: {
     fontSize: 14,
   },
   langCodeText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Palette.dark,
     letterSpacing: 0.3,
   },
@@ -214,14 +236,14 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: Palette.surfaceContainerLow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
   },
   notifDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 6,
     right: 6,
     width: 8,
@@ -229,6 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Palette.accent,
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
 });
