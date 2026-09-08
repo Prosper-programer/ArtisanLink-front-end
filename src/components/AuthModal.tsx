@@ -5,6 +5,10 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
@@ -12,21 +16,86 @@ import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
 export const AuthModal: React.FC = () => {
-  const { authModalVisible, closeAuthModal, login } = useApp();
-  const [isSignUp, setIsSignUp] = useState(true);
-  const [name, setName] = useState('Jean Dupont');
-  const [email, setEmail] = useState('jean.dupont@artisanlink.com');
-  const [password, setPassword] = useState('••••••••');
+  const { authModalVisible, closeAuthModal, login, register } = useApp();
+  const [isSignUp, setIsSignUp] = useState(false); // Default to Sign In
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!authModalVisible) return null;
 
-  const handleAuthSubmit = () => {
-    login();
+  const handleToggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setErrorMessage(null);
+  };
+
+  const handleAuthSubmit = async () => {
+    setErrorMessage(null);
+
+    // Basic Validation
+    if (!email.trim() || !password) {
+      setErrorMessage('Email and password are required');
+      return;
+    }
+
+    if (isSignUp) {
+      if (!fullName.trim() || !phoneNumber.trim() || !confirmPassword) {
+        setErrorMessage('All registration fields are required');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setErrorMessage('Passwords do not match');
+        return;
+      }
+
+      if (password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters long');
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const res = await register({
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim(),
+          email: email.trim(),
+          password,
+          confirmPassword,
+        });
+
+        if (!res.success) {
+          setErrorMessage(res.message);
+        }
+      } else {
+        const res = await login({
+          email: email.trim(),
+          password,
+        });
+
+        if (!res.success) {
+          setErrorMessage(res.message);
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Modal visible={authModalVisible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
@@ -38,97 +107,150 @@ export const AuthModal: React.FC = () => {
             </Pressable>
           </View>
 
-          {/* Main Title & Prompt */}
-          <ThemedText type="headlineMd" style={styles.promptTitle}>
-            Create an account to request a service
-          </ThemedText>
-          <ThemedText style={styles.promptSubtitle}>
-            Join ArtisanLink to connect with verified local professionals with guaranteed satisfaction.
-          </ThemedText>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* Main Title & Prompt */}
+            <ThemedText type="headlineMd" style={styles.promptTitle}>
+              {isSignUp ? 'Create your ArtisanLink account' : 'Welcome back to ArtisanLink'}
+            </ThemedText>
+            <ThemedText style={styles.promptSubtitle}>
+              {isSignUp
+                ? 'Join ArtisanLink to connect with verified local professionals with guaranteed satisfaction.'
+                : 'Sign in to access your service requests, chats, and favorite professionals.'}
+            </ThemedText>
 
-          {/* Benefits Checklist */}
-          <View style={styles.benefitsCard}>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-              <ThemedText style={styles.benefitText}>Submit service requests</ThemedText>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-              <ThemedText style={styles.benefitText}>Real-time live request tracking</ThemedText>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-              <ThemedText style={styles.benefitText}>Direct chat with local professionals</ThemedText>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-              <ThemedText style={styles.benefitText}>Manage your profile & saved pros</ThemedText>
-            </View>
-            <View style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-              <ThemedText style={styles.benefitText}>Receive instant arrival notifications</ThemedText>
-            </View>
-          </View>
-
-          {/* Form Fields */}
-          <View style={styles.formContainer}>
-            {isSignUp && (
-              <View style={styles.inputWrap}>
-                <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
-                <TextInput
-                  style={styles.textInput}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="e.g. Jean Dupont"
-                  placeholderTextColor={Palette.secondaryText}
-                />
+            {/* Error Message Banner */}
+            {errorMessage && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={18} color="#DC2626" />
+                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
               </View>
             )}
 
-            <View style={styles.inputWrap}>
-              <ThemedText style={styles.inputLabel}>Email Address</ThemedText>
-              <TextInput
-                style={styles.textInput}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                placeholder="name@example.com"
-                placeholderTextColor={Palette.secondaryText}
-              />
+            {/* Benefits Checklist (only for sign up) */}
+            {isSignUp && (
+              <View style={styles.benefitsCard}>
+                <View style={styles.benefitRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
+                  <ThemedText style={styles.benefitText}>Submit verified service requests</ThemedText>
+                </View>
+                <View style={styles.benefitRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
+                  <ThemedText style={styles.benefitText}>Direct chat with local artisans</ThemedText>
+                </View>
+                <View style={styles.benefitRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
+                  <ThemedText style={styles.benefitText}>Real-time job tracking & reviews</ThemedText>
+                </View>
+              </View>
+            )}
+
+            {/* Form Fields */}
+            <View style={styles.formContainer}>
+              {isSignUp && (
+                <>
+                  <View style={styles.inputWrap}>
+                    <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
+                    <TextInput
+                      style={styles.textInput}
+                      value={fullName}
+                      onChangeText={setFullName}
+                      placeholder="e.g. Alice Mengue"
+                      placeholderTextColor={Palette.secondaryText}
+                      autoCapitalize="words"
+                      editable={!loading}
+                    />
+                  </View>
+
+                  <View style={styles.inputWrap}>
+                    <ThemedText style={styles.inputLabel}>Phone Number</ThemedText>
+                    <TextInput
+                      style={styles.textInput}
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                      keyboardType="phone-pad"
+                      placeholder="e.g. 237690123456"
+                      placeholderTextColor={Palette.secondaryText}
+                      editable={!loading}
+                    />
+                  </View>
+                </>
+              )}
+
+              <View style={styles.inputWrap}>
+                <ThemedText style={styles.inputLabel}>Email Address</ThemedText>
+                <TextInput
+                  style={styles.textInput}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder="name@example.com"
+                  placeholderTextColor={Palette.secondaryText}
+                  editable={!loading}
+                />
+              </View>
+
+              <View style={styles.inputWrap}>
+                <ThemedText style={styles.inputLabel}>Password</ThemedText>
+                <TextInput
+                  style={styles.textInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  placeholder="At least 6 characters"
+                  placeholderTextColor={Palette.secondaryText}
+                  editable={!loading}
+                />
+              </View>
+
+              {isSignUp && (
+                <View style={styles.inputWrap}>
+                  <ThemedText style={styles.inputLabel}>Confirm Password</ThemedText>
+                  <TextInput
+                    style={styles.textInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    placeholder="Re-enter your password"
+                    placeholderTextColor={Palette.secondaryText}
+                    editable={!loading}
+                  />
+                </View>
+              )}
             </View>
 
-            <View style={styles.inputWrap}>
-              <ThemedText style={styles.inputLabel}>Password</ThemedText>
-              <TextInput
-                style={styles.textInput}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="••••••••"
-                placeholderTextColor={Palette.secondaryText}
-              />
+            {/* Buttons */}
+            <View style={styles.buttonActions}>
+              <Pressable
+                onPress={handleAuthSubmit}
+                disabled={loading}
+                style={[styles.primaryAuthBtn, loading && styles.btnDisabled]}>
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <ThemedText style={styles.primaryAuthBtnText}>
+                      {isSignUp ? 'Create Account & Continue' : 'Sign In & Continue'}
+                    </ThemedText>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable
+                onPress={handleToggleMode}
+                disabled={loading}
+                style={styles.toggleAuthBtn}>
+                <ThemedText style={styles.toggleAuthText}>
+                  {isSignUp
+                    ? 'Already have an account? Sign In'
+                    : "Don't have an account? Create Account"}
+                </ThemedText>
+              </Pressable>
             </View>
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.buttonActions}>
-            <Pressable onPress={handleAuthSubmit} style={styles.primaryAuthBtn}>
-              <ThemedText style={styles.primaryAuthBtnText}>
-                {isSignUp ? 'Create Account & Continue' : 'Sign In & Continue'}
-              </ThemedText>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            </Pressable>
-
-            <Pressable
-              onPress={() => setIsSignUp(!isSignUp)}
-              style={styles.toggleAuthBtn}>
-              <ThemedText style={styles.toggleAuthText}>
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create Account"}
-              </ThemedText>
-            </Pressable>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -147,6 +269,9 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
     maxHeight: '90%',
+  },
+  scrollContent: {
+    paddingBottom: Spacing.lg,
   },
   header: {
     flexDirection: 'row',
@@ -180,6 +305,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 18,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: BorderRadius.default,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  errorText: {
+    flex: 1,
+    color: '#B91C1C',
+    fontSize: 13,
+    fontWeight: '500',
+  },
   benefitsCard: {
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.default,
@@ -201,6 +344,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   inputWrap: {
     gap: 4,
@@ -237,6 +381,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 3,
+  },
+  btnDisabled: {
+    opacity: 0.7,
   },
   primaryAuthBtnText: {
     fontSize: 15,

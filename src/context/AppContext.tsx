@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   POPULAR_SERVICES,
   PROFESSIONALS,
@@ -10,6 +10,8 @@ import {
   ChatThread,
   MessageItem,
 } from '@/data/mockData';
+import { AuthService, LoginPayload, RegisterPayload, BackendUser } from '@/services/auth.service';
+import { Storage, AUTH_TOKEN_KEY } from '@/services/storage';
 
 export type AppPhase = 'SPLASH' | 'LANGUAGE' | 'ONBOARDING' | 'APP';
 export type AppLanguage = 'en' | 'fr';
@@ -17,11 +19,13 @@ export type AuthStatus = 'guest' | 'authenticated';
 export type UserRole = 'customer' | 'provider';
 
 export interface UserProfile {
+  id?: string;
   name: string;
   email: string;
   phone: string;
   avatar: string;
   isProvider: boolean;
+  role?: string;
 }
 
 export interface PendingRequestDraft {
@@ -45,12 +49,14 @@ interface AppContextType {
 
   // Authentication & Unified Profile
   authStatus: AuthStatus;
+  token: string | null;
   user: UserProfile;
   activeRole: UserRole;
   setActiveRole: (role: UserRole) => void;
   toggleActiveRole: () => void;
-  login: () => void;
-  logout: () => void;
+  login: (credentials?: LoginPayload) => Promise<{ success: boolean; message: string }>;
+  register: (data: RegisterPayload) => Promise<{ success: boolean; message: string }>;
+  logout: () => Promise<void>;
   activateProvider: (proData?: Partial<Professional>) => void;
 
   // Pending Request State Preservation across Auth
@@ -140,14 +146,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 2. Auth & Unified User Profile (User can be both Customer + Provider)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('guest');
+  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile>({
-    name: 'Jean Dupont',
-    email: 'jean.dupont@artisanlink.com',
-    phone: '+1 (555) 234-8901',
+    name: 'Guest User',
+    email: '',
+    phone: '',
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
     isProvider: false,
   });
   const [activeRole, setActiveRole] = useState<UserRole>('customer');
+
+  // Restore authenticated session on app mount
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const savedToken = await Storage.getItem(AUTH_TOKEN_KEY);
+        if (savedToken) {
+          const res = await AuthService.getMe(savedToken);
+          if (res.success && res.user) {
+            setToken(savedToken);
+            setAuthStatus('authenticated');
+            setUser({
+              id: res.user.id || res.user._id,
+              name: res.user.fullName,
+              email: res.user.email,
+              phone: res.user.phoneNumber,
+              avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+              isProvider: res.user.providerProfile?.isProvider || false,
+              role: res.user.role,
+            });
+          } else {
+            await Storage.removeItem(AUTH_TOKEN_KEY);
+          }
+        }
+      } catch (e) {
+        console.warn('Session restoration failed:', e);
+      }
+    };
+    restoreSession();
+  }, []);
 
   // 3. Pending request form preservation across Auth
   const [pendingRequestDraft, setPendingRequestDraft] = useState<PendingRequestDraft | null>(null);
@@ -197,19 +234,66 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveRole((prev) => (prev === 'customer' ? 'provider' : 'customer'));
   };
 
-  const login = () => {
-    setAuthStatus('authenticated');
-    setAuthModalVisible(false);
-    if (pendingCallback) {
-      const cb = pendingCallback;
-      setPendingCallback(null);
-      cb();
+  const login = async (credentials?: LoginPayload): Promise<{ success: boolean; message: string }> => {
+    if (!credentials) {
+      // Mock fallback
+      setAuthStatus('authenticated');
+      setAuthModalVisible(false);
+      if (pendingCallback) {
+        const cb = pendingCallback;
+        setPendingCallback(null);
+        cb();
+      }
+      return { success: true, message: 'Logged in' };
     }
+
+    const res = await AuthService.login(credentials);
+    if (res.success && res.token && res.user) {
+      await Storage.setItem(AUTH_TOKEN_KEY, res.token);
+      setToken(res.token);
+      setAuthStatus('authenticated');
+      setUser({
+        id: res.user.id || res.user._id,
+        name: res.user.fullName,
+        email: res.user.email,
+        phone: res.user.phoneNumber,
+        avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+        isProvider: res.user.providerProfile?.isProvider || false,
+        role: res.user.role,
+      });
+      setAuthModalVisible(false);
+      if (pendingCallback) {
+        const cb = pendingCallback;
+        setPendingCallback(null);
+        cb();
+      }
+      return { success: true, message: res.message };
+    }
+
+    return { success: false, message: res.message };
   };
 
-  const logout = () => {
+  const register = async (data: RegisterPayload): Promise<{ success: boolean; message: string }> => {
+    const res = await AuthService.register(data);
+    if (res.success) {
+      // Auto-login after successful registration
+      return await login({ email: data.email, password: data.password });
+    }
+    return { success: false, message: res.message };
+  };
+
+  const logout = async () => {
+    await Storage.removeItem(AUTH_TOKEN_KEY);
+    setToken(null);
     setAuthStatus('guest');
     setActiveRole('customer');
+    setUser({
+      name: 'Guest User',
+      email: '',
+      phone: '',
+      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+      isProvider: false,
+    });
   };
 
   const activateProvider = (proData?: Partial<Professional>) => {
@@ -455,11 +539,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         language,
         setLanguage,
         authStatus,
+        token,
         user,
         activeRole,
         setActiveRole,
         toggleActiveRole,
         login,
+        register,
         logout,
         activateProvider,
         pendingRequestDraft,
