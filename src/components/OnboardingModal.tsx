@@ -12,52 +12,109 @@ import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
-const ONBOARDING_DATA = [
-  {
-    id: 1,
-    step: 'FIND',
-    tag: 'EXPLORE SERVICES',
-    title: 'Find the right professional',
-    description: 'Discover skilled and verified professionals offering the services you need near you.',
-    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&auto=format&fit=crop&q=85',
-    buttonText: 'Next →',
-    showBadges: false,
-  },
-  {
-    id: 2,
-    step: 'CONNECT',
-    tag: 'TRUSTED & VERIFIED',
-    title: 'Connect with trusted professionals',
-    description: 'Compare professionals, explore real ratings and reviews, and choose the perfect artisan for your project.',
-    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&auto=format&fit=crop&q=85',
-    buttonText: 'Next →',
-    showBadges: true,
-    badges: {
-      verified: 'Verified Pro',
-      rating: '4.9',
-      distance: '1.2 km',
+interface OnboardingStep {
+  id: number;
+  step: string;
+  tag: string;
+  title: string;
+  description: string;
+  image: string;
+  buttonText: string;
+  showBadges: boolean;
+  badges?: {
+    verified: string;
+    rating: string;
+    distance: string;
+  };
+}
+
+const ONBOARDING_DATA_MAP: Record<'en' | 'fr', OnboardingStep[]> = {
+  en: [
+    {
+      id: 1,
+      step: 'FIND',
+      tag: 'EXPLORE SERVICES',
+      title: 'Find the right professional',
+      description: 'Discover skilled and verified professionals offering the services you need near you.',
+      image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Next →',
+      showBadges: false,
     },
-  },
-  {
-    id: 3,
-    step: 'GET_IT_DONE',
-    tag: 'GUARANTEED QUALITY',
-    title: 'Get the job done',
-    description: 'Send your request, communicate directly with your professional, and get quality work done with total confidence.',
-    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&auto=format&fit=crop&q=85',
-    buttonText: 'Get Started',
-    showBadges: false,
-  },
-];
+    {
+      id: 2,
+      step: 'CONNECT',
+      tag: 'TRUSTED & VERIFIED',
+      title: 'Connect with trusted professionals',
+      description: 'Compare professionals, explore real ratings and reviews, and choose the perfect artisan for your project.',
+      image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Next →',
+      showBadges: true,
+      badges: {
+        verified: 'Verified Pro',
+        rating: '4.9',
+        distance: '1.2 km',
+      },
+    },
+    {
+      id: 3,
+      step: 'GET_IT_DONE',
+      tag: 'GUARANTEED QUALITY',
+      title: 'Get the job done',
+      description: 'Send your request, communicate directly with your professional, and get quality work done with total confidence.',
+      image: 'https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Get Started',
+      showBadges: false,
+    },
+  ],
+  fr: [
+    {
+      id: 1,
+      step: 'FIND',
+      tag: 'EXPLORER LES SERVICES',
+      title: 'Trouvez le bon professionnel',
+      description: 'Découvrez des professionnels qualifiés et vérifiés proposant les services dont vous avez besoin près de chez vous.',
+      image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Suivant →',
+      showBadges: false,
+    },
+    {
+      id: 2,
+      step: 'CONNECT',
+      tag: 'DE CONFIANCE & VÉRIFIÉ',
+      title: 'Connectez-vous à des pros de confiance',
+      description: 'Comparez les artisans, consultez les avis réels et sélectionnez l’expert idéal pour vos travaux.',
+      image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Suivant →',
+      showBadges: true,
+      badges: {
+        verified: 'Pro Vérifié',
+        rating: '4.9',
+        distance: '1.2 km',
+      },
+    },
+    {
+      id: 3,
+      step: 'GET_IT_DONE',
+      tag: 'QUALITÉ GARANTIE',
+      title: 'Réalisez votre projet avec succès',
+      description: 'Envoyez votre demande, échangez en direct avec votre artisan et obtenez un travail soigné en toute sérénité.',
+      image: 'https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=1200&auto=format&fit=crop&q=85',
+      buttonText: 'Commencer',
+      showBadges: false,
+    },
+  ],
+};
 
 export const OnboardingModal: React.FC = () => {
-  const { appPhase, setAppPhase } = useApp();
+  const { appPhase, setAppPhase, language } = useApp();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   if (appPhase !== 'ONBOARDING') return null;
 
-  const current = ONBOARDING_DATA[currentStepIndex];
-  const isLast = currentStepIndex === ONBOARDING_DATA.length - 1;
+  const currentLanguageKey = language === 'fr' ? 'fr' : 'en';
+  const steps = ONBOARDING_DATA_MAP[currentLanguageKey];
+  const current = steps[currentStepIndex];
+  const isLast = currentStepIndex === steps.length - 1;
 
   const handleNext = () => {
     if (isLast) {
@@ -118,8 +175,10 @@ export const OnboardingModal: React.FC = () => {
               ]}
               hitSlop={10}
               accessibilityLabel="Skip onboarding">
-              <ThemedText style={styles.skipBtnText}>Skip</ThemedText>
-              <Ionicons name="chevron-forward" size={15} color={Palette.secondaryText} />
+              <ThemedText style={styles.skipBtnText}>
+                {language === 'fr' ? 'Passer' : 'Skip'}
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={14} color={Palette.secondaryText} />
             </Pressable>
           ) : (
             <View style={styles.skipSpacer} />
@@ -164,7 +223,7 @@ export const OnboardingModal: React.FC = () => {
 
             {/* Centered Pagination Dots */}
             <View style={styles.dotsRow}>
-              {ONBOARDING_DATA.map((_, idx) => {
+              {steps.map((_, idx) => {
                 const active = idx === currentStepIndex;
                 return (
                   <View
@@ -243,14 +302,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)', // Reduced white opacity
+    backgroundColor: 'rgba(255, 255, 255, 0.40)', // Low opacity frosted backing
     paddingVertical: 6,
     paddingHorizontal: 12,
     paddingRight: 16,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.60)',
-    ...Shadows.subtle,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   logoBadge: {
     width: 30,
@@ -269,18 +327,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)', // Reduced white opacity
+    backgroundColor: 'rgba(255, 255, 255, 0.40)', // Reduced opacity matching logo
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.60)',
-    ...Shadows.subtle,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  topActionPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.96 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.60)',
   },
   skipBtnPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.96 }],
-    backgroundColor: 'rgba(255, 255, 255, 0.90)',
+    backgroundColor: 'rgba(255, 255, 255, 0.60)',
   },
   skipBtnText: {
     fontSize: 13,
@@ -331,11 +393,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)', // Reduced opacity subtle frosted badge
     paddingVertical: 5,
     paddingHorizontal: 11,
     borderRadius: BorderRadius.full,
-    ...Shadows.subtle,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.40)',
   },
   badgeItemText: {
     fontSize: 12,

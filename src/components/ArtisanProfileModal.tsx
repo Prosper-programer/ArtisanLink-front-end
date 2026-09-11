@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { getDefaultCoverForProfession } from '@/constants/professionAssets';
 
 export const ArtisanProfileModal: React.FC = () => {
   const {
@@ -19,11 +20,15 @@ export const ArtisanProfileModal: React.FC = () => {
     selectedProfessional,
     openCreateRequest,
     startChatWithPro,
+    language,
   } = useApp();
 
   if (!professionalProfileVisible || !selectedProfessional) return null;
 
   const pro = selectedProfessional;
+  const isFrench = language === 'fr';
+
+  const coverUrl = pro.coverImage || getDefaultCoverForProfession(pro.profession);
 
   const handleRequestService = () => {
     closeProfessionalProfile();
@@ -39,105 +44,117 @@ export const ArtisanProfileModal: React.FC = () => {
     <Modal visible={professionalProfileVisible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          {/* Header Image */}
-          <View style={styles.heroContainer}>
-            <Image source={{ uri: pro.coverImage }} style={styles.coverImage} />
-            <Pressable onPress={closeProfessionalProfile} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color="#FFFFFF" />
-            </Pressable>
-          </View>
+          {/* Scrollable Container with Hero and All Details */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+          >
+            {/* Header Cover Image */}
+            <View style={styles.heroContainer}>
+              <Image source={{ uri: coverUrl }} style={styles.coverImage} resizeMode="cover" />
+              <Pressable onPress={closeProfessionalProfile} style={styles.closeBtn} hitSlop={8}>
+                <Ionicons name="close" size={20} color="#FFFFFF" />
+              </Pressable>
+            </View>
 
-          {/* Profile Card Header */}
-          <View style={styles.headerInfoSection}>
-            <Image source={{ uri: pro.avatar }} style={styles.avatar} />
-            <View style={styles.nameSection}>
-              <View style={styles.nameRow}>
-                <ThemedText type="headlineLg" style={styles.proName}>{pro.name}</ThemedText>
-                {pro.verified && (
-                  <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
-                )}
-              </View>
-              <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
-              <ThemedText style={styles.proSpecialization}>{pro.specialization}</ThemedText>
-
-              <View style={styles.statsMetaRow}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="star" size={14} color={Palette.gold} />
-                  <ThemedText style={styles.metaVal}>{pro.rating} ({pro.reviewCount} reviews)</ThemedText>
+            {/* Profile Card Header Info */}
+            <View style={styles.headerInfoSection}>
+              <Image source={{ uri: pro.avatar }} style={styles.avatar} />
+              <View style={styles.nameSection}>
+                <View style={styles.nameRow}>
+                  <ThemedText type="headlineLg" style={styles.proName}>{pro.name}</ThemedText>
+                  {pro.verified && (
+                    <Ionicons name="checkmark-circle" size={18} color={Palette.success} />
+                  )}
                 </View>
-                <ThemedText style={styles.metaDot}>•</ThemedText>
-                <View style={styles.metaItem}>
-                  <Ionicons name="location" size={14} color={Palette.primary} />
-                  <ThemedText style={styles.metaVal}>{pro.distance}</ThemedText>
+                <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
+                <ThemedText style={styles.proSpecialization}>{pro.specialization}</ThemedText>
+
+                <View style={styles.statsMetaRow}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="star" size={14} color={Palette.gold} />
+                    <ThemedText style={styles.metaVal}>{pro.rating} ({pro.reviewCount} {isFrench ? 'avis' : 'reviews'})</ThemedText>
+                  </View>
+                  <ThemedText style={styles.metaDot}>•</ThemedText>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="location" size={14} color={Palette.primary} />
+                    <ThemedText style={styles.metaVal}>{pro.distance}</ThemedText>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
 
-          {/* Body Content */}
-          <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {/* Quick Metrics Bar */}
-            <View style={styles.metricsBar}>
-              <View style={styles.metricItem}>
-                <ThemedText style={styles.metricVal}>${pro.hourlyRate}/hr</ThemedText>
-                <ThemedText style={styles.metricLabel}>Hourly Rate</ThemedText>
-              </View>
-              <View style={styles.metricDivider} />
-              <View style={styles.metricItem}>
-                <ThemedText style={styles.metricVal}>{pro.experienceYears} Yrs</ThemedText>
-                <ThemedText style={styles.metricLabel}>Experience</ThemedText>
-              </View>
-              <View style={styles.metricDivider} />
-              <View style={styles.metricItem}>
-                <ThemedText style={styles.metricVal}>{pro.completedJobs}</ThemedText>
-                <ThemedText style={styles.metricLabel}>Jobs Done</ThemedText>
-              </View>
-            </View>
-
-            {/* About Bio */}
-            <ThemedText style={styles.sectionTitle}>About Professional</ThemedText>
-            <ThemedText style={styles.bioText}>{pro.about}</ThemedText>
-
-            {/* Skills & Specialties */}
-            <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.md }]}>
-              Skills & Specialties
-            </ThemedText>
-            <View style={styles.skillsGrid}>
-              {pro.skills.map((sk, idx) => (
-                <View key={idx} style={styles.skillChip}>
-                  <Ionicons name="checkmark-sharp" size={14} color={Palette.primary} />
-                  <ThemedText style={styles.skillChipText}>{sk}</ThemedText>
+            {/* Body Content */}
+            <View style={styles.body}>
+              {/* Quick Metrics Bar: Per-Task Quote Pricing, Experience, Completed Jobs */}
+              <View style={styles.metricsBar}>
+                <View style={styles.metricItem}>
+                  <ThemedText style={styles.metricVal}>
+                    {isFrench ? 'Sur Devis' : 'Per Task'}
+                  </ThemedText>
+                  <ThemedText style={styles.metricLabel}>
+                    {isFrench ? 'Tarification' : 'Pricing Mode'}
+                  </ThemedText>
                 </View>
-              ))}
-            </View>
+                <View style={styles.metricDivider} />
+                <View style={styles.metricItem}>
+                  <ThemedText style={styles.metricVal}>{pro.experienceYears} {isFrench ? 'Ans' : 'Yrs'}</ThemedText>
+                  <ThemedText style={styles.metricLabel}>{isFrench ? 'Expérience' : 'Experience'}</ThemedText>
+                </View>
+                <View style={styles.metricDivider} />
+                <View style={styles.metricItem}>
+                  <ThemedText style={styles.metricVal}>{pro.completedJobs}</ThemedText>
+                  <ThemedText style={styles.metricLabel}>{isFrench ? 'Missions' : 'Jobs Done'}</ThemedText>
+                </View>
+              </View>
 
-            {/* Portfolio Showcase */}
-            {pro.portfolio.length > 0 && (
-              <>
-                <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
-                  Portfolio Showcase
-                </ThemedText>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioScroll}>
-                  {pro.portfolio.map((item) => (
-                    <View key={item.id} style={styles.portfolioCard}>
-                      <Image source={{ uri: item.image }} style={styles.portfolioImg} />
-                      <View style={styles.portfolioMeta}>
-                        <ThemedText style={styles.portfolioTitle}>{item.title}</ThemedText>
-                        <ThemedText style={styles.portfolioCat}>{item.category}</ThemedText>
+              {/* About Bio */}
+              <ThemedText style={styles.sectionTitle}>
+                {isFrench ? 'À propos du professionnel' : 'About Professional'}
+              </ThemedText>
+              <ThemedText style={styles.bioText}>{pro.about}</ThemedText>
+
+              {/* Skills & Specialties */}
+              <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.md }]}>
+                {isFrench ? 'Compétences & Spécialités' : 'Skills & Specialties'}
+              </ThemedText>
+              <View style={styles.skillsGrid}>
+                {pro.skills.map((sk, idx) => (
+                  <View key={idx} style={styles.skillChip}>
+                    <Ionicons name="checkmark-sharp" size={14} color={Palette.primary} />
+                    <ThemedText style={styles.skillChipText}>{sk}</ThemedText>
+                  </View>
+                ))}
+              </View>
+
+              {/* Portfolio Showcase */}
+              {pro.portfolio.length > 0 && (
+                <>
+                  <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
+                    {isFrench ? 'Réalisations & Portfolio' : 'Portfolio Showcase'}
+                  </ThemedText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioScroll}>
+                    {pro.portfolio.map((item) => (
+                      <View key={item.id} style={styles.portfolioCard}>
+                        <Image source={{ uri: item.image }} style={styles.portfolioImg} />
+                        <View style={styles.portfolioMeta}>
+                          <ThemedText style={styles.portfolioTitle}>{item.title}</ThemedText>
+                          <ThemedText style={styles.portfolioCat}>{item.category}</ThemedText>
+                        </View>
                       </View>
-                    </View>
-                  ))}
-                </ScrollView>
-              </>
-            )}
+                    ))}
+                  </ScrollView>
+                </>
+              )}
 
-            {/* Customer Reviews */}
-            {pro.reviews.length > 0 && (
-              <>
-                <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
-                  Verified Reviews ({pro.reviews.length})
-                </ThemedText>
-                <View style={styles.reviewsList}>
+              {/* Customer Reviews */}
+              {pro.reviews.length > 0 && (
+                <>
+                  <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
+                    {isFrench ? `Avis vérifiés (${pro.reviews.length})` : `Verified Reviews (${pro.reviews.length})`}
+                  </ThemedText>
+                  <View style={styles.reviewsList}>
                   {pro.reviews.map((rev) => (
                     <View key={rev.id} style={styles.reviewCard}>
                       <View style={styles.reviewHeader}>
@@ -157,6 +174,7 @@ export const ArtisanProfileModal: React.FC = () => {
                 </View>
               </>
             )}
+            </View>
           </ScrollView>
 
           {/* Action Footer */}
@@ -187,10 +205,16 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.background,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    maxHeight: '92%',
-    minHeight: '80%',
+    maxHeight: '94%',
+    minHeight: '85%',
     flex: 1,
     overflow: 'hidden',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: Spacing.xl + 20,
   },
   heroContainer: {
     height: 140,

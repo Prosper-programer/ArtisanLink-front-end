@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -26,6 +26,7 @@ import {
 import { useApp } from "@/context/AppContext";
 import { ServiceRequest, PROFESSIONALS } from "@/data/mockData";
 import AppHeader from "@/components/AppHeader";
+import { SkeletonRequestCard } from "@/components/SkeletonLoader";
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -54,6 +55,15 @@ export default function RequestsScreen() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [trackingModalRequest, setTrackingModalRequest] =
     useState<ServiceRequest | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   // Counts for each tab
   const activeCount = serviceRequests.filter(
@@ -433,10 +443,18 @@ export default function RequestsScreen() {
                 </Pressable>
               )}
 
-              {/* =========================================================================
-              4. ONGOING REQUEST CARDS ARCHITECTURE (ACTIVE TAB)
-          ========================================================================= */}
-              {activeTab === "active" && (
+              {isLoading ? (
+                <View style={{ gap: Spacing.md, marginTop: Spacing.sm }}>
+                  <SkeletonRequestCard />
+                  <SkeletonRequestCard />
+                  <SkeletonRequestCard />
+                </View>
+              ) : (
+                <>
+                  {/* =========================================================================
+                  4. ONGOING REQUEST CARDS ARCHITECTURE (ACTIVE TAB)
+              ========================================================================= */}
+                  {activeTab === "active" && (
                 <View style={styles.activeSection}>
                   {filteredRequests.map((req) => {
                     const isScheduled =
@@ -760,6 +778,8 @@ export default function RequestsScreen() {
                   )}
                 </View>
               )}
+            </>
+          )}
 
               {/* =========================================================================
               6. ARTISAN SUPPORT & GUARANTEE CARD

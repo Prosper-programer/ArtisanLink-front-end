@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -22,6 +22,7 @@ import {
 } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, Professional } from '@/data/mockData';
+import { SkeletonArtisanCard } from '@/components/SkeletonLoader';
 
 export default function ExploreScreen() {
   const {
@@ -40,6 +41,15 @@ export default function ExploreScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState<'all' | 'today' | 'topRated'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [selectedCategoryFilter, quickFilter]);
 
   const categoryNamesFr: Record<string, string> = {
     plumbing: 'Plomberie',
@@ -263,7 +273,13 @@ export default function ExploreScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {filteredPros.length === 0 ? (
+          {isLoading ? (
+            <>
+              <SkeletonArtisanCard />
+              <SkeletonArtisanCard />
+              <SkeletonArtisanCard />
+            </>
+          ) : filteredPros.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={48} color={Palette.secondaryText} />
               <ThemedText style={styles.emptyTitle}>
@@ -330,13 +346,13 @@ export default function ExploreScreen() {
                   </View>
                 </View>
 
-                {/* Badge Row: Hourly Rate, Experience, Availability */}
+                {/* Badge Row: Pricing Mode, Experience, Availability */}
                 <View style={styles.proStatsRow}>
                   <View style={styles.statPill}>
-                    <ThemedText style={styles.statPillLabel}>
-                      {isFrench ? 'Tarif :' : 'Rate:'}
+                    <Ionicons name="pricetag-outline" size={11} color={Palette.primary} />
+                    <ThemedText style={styles.statPillValue}>
+                      {isFrench ? 'Sur Devis' : 'By Quote'}
                     </ThemedText>
-                    <ThemedText style={styles.statPillValue}>${pro.hourlyRate}/hr</ThemedText>
                   </View>
 
                   <View style={styles.statPill}>

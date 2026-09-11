@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -24,6 +24,7 @@ import {
 } from "@/constants/theme";
 import { useApp } from "@/context/AppContext";
 import AppHeader from "@/components/AppHeader";
+import { SkeletonMessageRow } from "@/components/SkeletonLoader";
 
 export default function MessagesScreen() {
   const router = useRouter();
@@ -34,6 +35,15 @@ export default function MessagesScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterActive, setFilterActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [filterActive]);
 
   const filteredChats = useMemo(() => {
     let list = chats;
@@ -190,6 +200,13 @@ export default function MessagesScreen() {
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
               </Pressable>
+            </View>
+          ) : isLoading ? (
+            <View style={{ gap: Spacing.xs, marginTop: Spacing.xs }}>
+              <SkeletonMessageRow />
+              <SkeletonMessageRow />
+              <SkeletonMessageRow />
+              <SkeletonMessageRow />
             </View>
           ) : filteredChats.length === 0 ? (
             <View style={styles.emptyContainer}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -16,49 +16,74 @@ import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
 export const AuthModal: React.FC = () => {
-  const { authModalVisible, closeAuthModal, login, register } = useApp();
-  const [isSignUp, setIsSignUp] = useState(false); // Default to Sign In
+  const { authModalVisible, closeAuthModal, login, register, authInitialMode } = useApp();
+  const [isSignUp, setIsSignUp] = useState(authInitialMode === 'signup');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authModalVisible) {
+      setIsSignUp(authInitialMode === 'signup');
+      setFieldErrors({});
+      setGeneralError(null);
+    }
+  }, [authModalVisible, authInitialMode]);
 
   if (!authModalVisible) return null;
 
   const handleToggleMode = () => {
     setIsSignUp(!isSignUp);
-    setErrorMessage(null);
+    setFieldErrors({});
+    setGeneralError(null);
   };
 
   const handleAuthSubmit = async () => {
-    setErrorMessage(null);
+    const errors: Record<string, string> = {};
+    setGeneralError(null);
 
-    // Basic Validation
-    if (!email.trim() || !password) {
-      setErrorMessage('Email and password are required');
-      return;
+    if (isSignUp) {
+      if (!fullName.trim()) {
+        errors.fullName = 'Full name is required';
+      }
+      if (!phoneNumber.trim()) {
+        errors.phoneNumber = 'Phone number is required';
+      } else if (phoneNumber.trim().length < 8) {
+        errors.phoneNumber = 'Please enter a valid phone number';
+      }
+    }
+
+    if (!email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!email.includes('@') || !email.includes('.')) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
     }
 
     if (isSignUp) {
-      if (!fullName.trim() || !phoneNumber.trim() || !confirmPassword) {
-        setErrorMessage('All registration fields are required');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setErrorMessage('Passwords do not match');
-        return;
-      }
-
-      if (password.length < 6) {
-        setErrorMessage('Password must be at least 6 characters long');
-        return;
+      if (!confirmPassword) {
+        errors.confirmPassword = 'Confirmation password is required';
+      } else if (password !== confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match';
       }
     }
 
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -72,7 +97,7 @@ export const AuthModal: React.FC = () => {
         });
 
         if (!res.success) {
-          setErrorMessage(res.message);
+          setGeneralError(res.message);
         }
       } else {
         const res = await login({
@@ -81,11 +106,11 @@ export const AuthModal: React.FC = () => {
         });
 
         if (!res.success) {
-          setErrorMessage(res.message);
+          setGeneralError(res.message);
         }
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred');
+      setGeneralError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -118,11 +143,11 @@ export const AuthModal: React.FC = () => {
                 : 'Sign in to access your service requests, chats, and favorite professionals.'}
             </ThemedText>
 
-            {/* Error Message Banner */}
-            {errorMessage && (
+            {/* Server Error Message Banner (only if server returned error like wrong password) */}
+            {generalError && (
               <View style={styles.errorBanner}>
                 <Ionicons name="alert-circle" size={18} color="#DC2626" />
-                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+                <ThemedText style={styles.errorText}>{generalError}</ThemedText>
               </View>
             )}
 
@@ -149,72 +174,167 @@ export const AuthModal: React.FC = () => {
               {isSignUp && (
                 <>
                   <View style={styles.inputWrap}>
-                    <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
-                    <TextInput
-                      style={styles.textInput}
-                      value={fullName}
-                      onChangeText={setFullName}
-                      placeholder="e.g. Alice Mengue"
-                      placeholderTextColor={Palette.secondaryText}
-                      autoCapitalize="words"
-                      editable={!loading}
-                    />
+                    <ThemedText style={styles.inputLabel}>Full Name *</ThemedText>
+                    <View style={[styles.inputBox, fieldErrors.fullName && styles.inputBoxError]}>
+                      <Ionicons
+                        name="person-outline"
+                        size={18}
+                        color={fieldErrors.fullName ? Palette.errorRed : Palette.primary}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.textInputInner}
+                        value={fullName}
+                        onChangeText={(text) => {
+                          setFullName(text);
+                          if (fieldErrors.fullName) {
+                            setFieldErrors((prev) => ({ ...prev, fullName: '' }));
+                          }
+                        }}
+                        placeholder="e.g. Alice Mengue"
+                        placeholderTextColor={Palette.secondaryText}
+                        autoCapitalize="words"
+                        editable={!loading}
+                      />
+                    </View>
+                    {fieldErrors.fullName ? (
+                      <View style={styles.fieldErrorRow}>
+                        <Ionicons name="alert-circle" size={13} color={Palette.errorRed} />
+                        <ThemedText style={styles.fieldErrorText}>{fieldErrors.fullName}</ThemedText>
+                      </View>
+                    ) : null}
                   </View>
 
                   <View style={styles.inputWrap}>
-                    <ThemedText style={styles.inputLabel}>Phone Number</ThemedText>
-                    <TextInput
-                      style={styles.textInput}
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      keyboardType="phone-pad"
-                      placeholder="e.g. 237690123456"
-                      placeholderTextColor={Palette.secondaryText}
-                      editable={!loading}
-                    />
+                    <ThemedText style={styles.inputLabel}>Phone Number *</ThemedText>
+                    <View style={[styles.inputBox, fieldErrors.phoneNumber && styles.inputBoxError]}>
+                      <Ionicons
+                        name="call-outline"
+                        size={18}
+                        color={fieldErrors.phoneNumber ? Palette.errorRed : Palette.primary}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.textInputInner}
+                        value={phoneNumber}
+                        onChangeText={(text) => {
+                          setPhoneNumber(text);
+                          if (fieldErrors.phoneNumber) {
+                            setFieldErrors((prev) => ({ ...prev, phoneNumber: '' }));
+                          }
+                        }}
+                        keyboardType="phone-pad"
+                        placeholder="e.g. 237690123456"
+                        placeholderTextColor={Palette.secondaryText}
+                        editable={!loading}
+                      />
+                    </View>
+                    {fieldErrors.phoneNumber ? (
+                      <View style={styles.fieldErrorRow}>
+                        <Ionicons name="alert-circle" size={13} color={Palette.errorRed} />
+                        <ThemedText style={styles.fieldErrorText}>{fieldErrors.phoneNumber}</ThemedText>
+                      </View>
+                    ) : null}
                   </View>
                 </>
               )}
 
               <View style={styles.inputWrap}>
-                <ThemedText style={styles.inputLabel}>Email Address</ThemedText>
-                <TextInput
-                  style={styles.textInput}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="name@example.com"
-                  placeholderTextColor={Palette.secondaryText}
-                  editable={!loading}
-                />
+                <ThemedText style={styles.inputLabel}>Email Address *</ThemedText>
+                <View style={[styles.inputBox, fieldErrors.email && styles.inputBoxError]}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={fieldErrors.email ? Palette.errorRed : Palette.primary}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.textInputInner}
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (fieldErrors.email) {
+                        setFieldErrors((prev) => ({ ...prev, email: '' }));
+                      }
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="name@example.com"
+                    placeholderTextColor={Palette.secondaryText}
+                    editable={!loading}
+                  />
+                </View>
+                {fieldErrors.email ? (
+                  <View style={styles.fieldErrorRow}>
+                    <Ionicons name="alert-circle" size={13} color={Palette.errorRed} />
+                    <ThemedText style={styles.fieldErrorText}>{fieldErrors.email}</ThemedText>
+                  </View>
+                ) : null}
               </View>
 
               <View style={styles.inputWrap}>
-                <ThemedText style={styles.inputLabel}>Password</ThemedText>
-                <TextInput
-                  style={styles.textInput}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  placeholder="At least 6 characters"
-                  placeholderTextColor={Palette.secondaryText}
-                  editable={!loading}
-                />
+                <ThemedText style={styles.inputLabel}>Password *</ThemedText>
+                <View style={[styles.inputBox, fieldErrors.password && styles.inputBoxError]}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={18}
+                    color={fieldErrors.password ? Palette.errorRed : Palette.primary}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.textInputInner}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (fieldErrors.password) {
+                        setFieldErrors((prev) => ({ ...prev, password: '' }));
+                      }
+                    }}
+                    secureTextEntry
+                    placeholder="At least 6 characters"
+                    placeholderTextColor={Palette.secondaryText}
+                    editable={!loading}
+                  />
+                </View>
+                {fieldErrors.password ? (
+                  <View style={styles.fieldErrorRow}>
+                    <Ionicons name="alert-circle" size={13} color={Palette.errorRed} />
+                    <ThemedText style={styles.fieldErrorText}>{fieldErrors.password}</ThemedText>
+                  </View>
+                ) : null}
               </View>
 
               {isSignUp && (
                 <View style={styles.inputWrap}>
-                  <ThemedText style={styles.inputLabel}>Confirm Password</ThemedText>
-                  <TextInput
-                    style={styles.textInput}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
-                    placeholder="Re-enter your password"
-                    placeholderTextColor={Palette.secondaryText}
-                    editable={!loading}
-                  />
+                  <ThemedText style={styles.inputLabel}>Confirm Password *</ThemedText>
+                  <View style={[styles.inputBox, fieldErrors.confirmPassword && styles.inputBoxError]}>
+                    <Ionicons
+                      name="shield-checkmark-outline"
+                      size={18}
+                      color={fieldErrors.confirmPassword ? Palette.errorRed : Palette.primary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.textInputInner}
+                      value={confirmPassword}
+                      onChangeText={(text) => {
+                        setConfirmPassword(text);
+                        if (fieldErrors.confirmPassword) {
+                          setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                        }
+                      }}
+                      secureTextEntry
+                      placeholder="Re-enter your password"
+                      placeholderTextColor={Palette.secondaryText}
+                      editable={!loading}
+                    />
+                  </View>
+                  {fieldErrors.confirmPassword ? (
+                    <View style={styles.fieldErrorRow}>
+                      <Ionicons name="alert-circle" size={13} color={Palette.errorRed} />
+                      <ThemedText style={styles.fieldErrorText}>{fieldErrors.confirmPassword}</ThemedText>
+                    </View>
+                  ) : null}
                 </View>
               )}
             </View>
@@ -363,6 +483,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     fontSize: 14,
     color: Palette.mainText,
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    backgroundColor: Palette.surface,
+    borderWidth: 1.5,
+    borderColor: Palette.outline,
+    borderRadius: BorderRadius.default,
+    paddingHorizontal: Spacing.sm,
+  },
+  inputBoxError: {
+    borderColor: Palette.errorRed,
+    backgroundColor: '#FFF5F5',
+  },
+  inputIcon: {
+    marginRight: Spacing.xs,
+  },
+  textInputInner: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14,
+    color: Palette.mainText,
+  },
+  fieldErrorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  fieldErrorText: {
+    fontSize: 11,
+    color: Palette.errorRed,
+    fontWeight: '600',
   },
   buttonActions: {
     marginTop: Spacing.lg,

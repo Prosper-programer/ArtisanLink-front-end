@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -24,6 +24,7 @@ import {
 import { useApp } from "@/context/AppContext";
 import { POPULAR_SERVICES, ServiceCategory } from "@/data/mockData";
 import AppHeader from "@/components/AppHeader";
+import { SkeletonServiceCard } from "@/components/SkeletonLoader";
 
 export default function ServicesScreen() {
   const router = useRouter();
@@ -31,6 +32,15 @@ export default function ServicesScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [selectedFilter]);
 
   const isFrench = language === "fr";
 
@@ -157,7 +167,13 @@ export default function ServicesScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {filteredServices.length === 0 ? (
+          {isLoading ? (
+            <>
+              <SkeletonServiceCard />
+              <SkeletonServiceCard />
+              <SkeletonServiceCard />
+            </>
+          ) : filteredServices.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons
                 name="construct-outline"

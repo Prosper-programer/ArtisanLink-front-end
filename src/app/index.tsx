@@ -220,54 +220,43 @@ export default function HomeScreen() {
             })}
           </View>
 
-          {/* "BECOME A SERVICE SELLER / PROVIDER" CARD (Identical for customer & guest) */}
+          {/* BECOME A PROVIDER PROMOTIONAL CARD WITH FULL IMAGE COVER & BLUR TEXT OVERLAY (FIRST DESIGN) */}
           {!user.isProvider && (
-            <View style={styles.sellerBannerCard}>
-              {/* Text Content */}
-              <View style={styles.sellerBannerContent}>
-                {/* Eyebrow & Icon Container Row */}
-                <View style={styles.sellerHeaderRow}>
-                  <View style={styles.sellerIconContainer}>
-                    <Ionicons name="trending-up" size={16} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.sellerEyebrowChip}>
-                    <ThemedText style={styles.sellerEyebrowText}>
-                      {t.growthOpportunity}
-                    </ThemedText>
-                  </View>
+            <View style={styles.providerPromoCard}>
+              <Image
+                source={{
+                  uri: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=900&auto=format&fit=crop&q=80',
+                }}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="cover"
+              />
+              {/* Dark Translucent Overlay */}
+              <View style={styles.providerCardOverlay} />
+
+              <View style={styles.providerCardContent}>
+                <View style={styles.providerTag}>
+                  <Ionicons name="construct" size={12} color={Palette.accent} />
+                  <ThemedText style={styles.providerTagText}>{t.partnerTag}</ThemedText>
                 </View>
 
-                {/* Headline */}
-                <ThemedText style={styles.sellerBannerHeadline}>
-                  {t.becomeServiceSeller}
+                <ThemedText style={styles.providerTitle}>{t.becomeProvider}</ThemedText>
+                <ThemedText style={styles.providerSub}>
+                  {t.offerServices}
                 </ThemedText>
 
-                {/* Body Copy */}
-                <ThemedText style={styles.sellerBannerBody}>
-                  {t.becomeServiceSellerDesc}
-                </ThemedText>
-
-                {/* CTA Button */}
                 <Pressable
-                  onPress={openProviderActivation}
-                  style={styles.sellerBannerBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.getStartedArrow}>
-                  <ThemedText style={styles.sellerBannerBtnText}>
-                    {t.getStartedArrow}
-                  </ThemedText>
-                </Pressable>
-              </View>
-
-              {/* Authentic Artisan Craftsman Workshop Photography */}
-              <View style={styles.sellerBannerImageWrap}>
-                <Image
-                  source={{
-                    uri: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&auto=format&fit=crop&q=80',
+                  onPress={() => {
+                    if (isGuest) {
+                      openAuthModal(() => openProviderActivation(), 'signup');
+                    } else {
+                      openProviderActivation();
+                    }
                   }}
-                  style={styles.sellerBannerImage}
-                  resizeMode="cover"
-                />
+                  style={styles.providerBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.getStarted}>
+                  <ThemedText style={styles.providerBtnText}>{t.getStarted}</ThemedText>
+                </Pressable>
               </View>
             </View>
           )}
@@ -589,104 +578,69 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  // SURFACE 1: LARGE BANNER CARD (HOME - SELLERS & NEARBY)
-  sellerBannerCard: {
-    backgroundColor: '#FFF7ED', // Card background: #FFF7ED
-    borderWidth: 1.5,
-    borderColor: '#FED7AA', // Border: #FED7AA
-    borderRadius: 16,
+  // BECOME A PROVIDER FULL COVER IMAGE CARD (FIRST DESIGN)
+  providerPromoCard: {
+    height: 165,
+    borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    marginTop: Spacing.xs,
-    shadowColor: '#C2410C',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    position: 'relative',
+    justifyContent: 'center',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+    ...Shadows.card,
   },
-  sellerBannerContent: {
+  providerCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18, 48, 74, 0.72)',
+  },
+  providerCardContent: {
     padding: Spacing.lg,
-    gap: Spacing.xs,
+    gap: 4,
   },
-  sellerHeaderRow: {
+  providerTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  sellerIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Palette.accent, // Icon container: Palette.accent (#F28C28)
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Palette.accent,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  sellerEyebrowChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FED7AA',
-    paddingVertical: 4,
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 3,
     paddingHorizontal: 10,
     borderRadius: BorderRadius.full,
-  },
-  sellerEyebrowText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#9A3412',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  sellerBannerHeadline: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: Palette.dark, // Title: Palette.dark (#12304A)
-    lineHeight: 28,
-    letterSpacing: -0.3,
-  },
-  sellerBannerBody: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Palette.secondaryText, // Description: Palette.secondaryText
-    lineHeight: 19,
-    marginTop: 2,
-    marginBottom: Spacing.xs,
-  },
-  sellerBannerBtn: {
     alignSelf: 'flex-start',
-    backgroundColor: Palette.primary, // Button: Palette.primary (#1769AA)
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+  },
+  providerTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Palette.accent,
+    letterSpacing: 0.5,
+  },
+  providerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 2,
+  },
+  providerSub: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.88)',
+    fontWeight: '500',
+  },
+  providerBtn: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.xs + 2,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: BorderRadius.default,
+    backgroundColor: Palette.primary,
     shadowColor: Palette.primary,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
     elevation: 3,
   },
-  sellerBannerBtnText: {
+  providerBtnText: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF', // Button text: #FFFFFF
-    letterSpacing: 0.3,
-  },
-  sellerBannerImageWrap: {
-    width: '100%',
-    height: 160,
-    position: 'relative',
-    borderTopWidth: 1,
-    borderTopColor: '#FED7AA',
-  },
-  sellerBannerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  sellerBannerImageGradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 48, 74, 0.15)',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // SURFACE 3: GUEST HOME CARD

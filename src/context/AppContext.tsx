@@ -11,6 +11,7 @@ import {
   MessageItem,
 } from '@/data/mockData';
 import { AuthService, LoginPayload, RegisterPayload, BackendUser } from '@/services/auth.service';
+import { ProviderService, BecomeProviderPayload, UpdateProviderPayload, ProviderProfileResponse } from '@/services/provider.service';
 import { Storage, AUTH_TOKEN_KEY } from '@/services/storage';
 
 export type AppPhase = 'SPLASH' | 'LANGUAGE' | 'ONBOARDING' | 'APP';
@@ -26,6 +27,7 @@ export interface UserProfile {
   avatar: string;
   isProvider: boolean;
   role?: string;
+  providerProfile?: ProviderProfileResponse;
 }
 
 export interface PendingRequestDraft {
@@ -44,6 +46,7 @@ interface AppContextType {
   // App Phase Flow
   appPhase: AppPhase;
   setAppPhase: (phase: AppPhase) => void;
+  isAppReady: boolean;
   language: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
 
@@ -57,7 +60,11 @@ interface AppContextType {
   login: (credentials?: LoginPayload) => Promise<{ success: boolean; message: string }>;
   register: (data: RegisterPayload) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  updatePersonalProfile: (payload: { fullName?: string; phoneNumber?: string; avatar?: string }) => Promise<{ success: boolean; message: string }>;
   activateProvider: (proData?: Partial<Professional>) => void;
+  becomeProvider: (data: BecomeProviderPayload) => Promise<{ success: boolean; message: string }>;
+  updateProvider: (data: UpdateProviderPayload) => Promise<{ success: boolean; message: string }>;
 
   // Pending Request State Preservation across Auth
   pendingRequestDraft: PendingRequestDraft | null;
@@ -86,7 +93,8 @@ interface AppContextType {
 
   // Auth Prompt Modal
   authModalVisible: boolean;
-  openAuthModal: (afterAuthCallback?: () => void) => void;
+  authInitialMode: 'signin' | 'signup';
+  openAuthModal: (afterAuthCallback?: () => void, initialMode?: 'signin' | 'signup') => void;
   closeAuthModal: () => void;
 
   // Request Submitted Success
@@ -142,6 +150,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // 1. Initial Flow: SPLASH -> LANGUAGE -> ONBOARDING -> APP
   const [appPhase, setAppPhase] = useState<AppPhase>('SPLASH');
+  const [isAppReady, setIsAppReady] = useState<boolean>(false);
   const [language, setLanguage] = useState<AppLanguage>('en');
 
   // 2. Auth & Unified User Profile (User can be both Customer + Provider)
@@ -151,15 +160,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     name: 'Guest User',
     email: '',
     phone: '',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+    avatar: '',
     isProvider: false,
   });
   const [activeRole, setActiveRole] = useState<UserRole>('customer');
 
-  // Restore authenticated session on app mount
+  // Restore authenticated session and preload core assets on app mount
   useEffect(() => {
-    const restoreSession = async () => {
+    const initializeApp = async () => {
       try {
+        // Preload essential vector icons font to prevent icon flicker/layout shifts
+        const { Ionicons } = await import('@expo/vector-icons');
+        const Font = await import('expo-font');
+        await Font.loadAsync(Ionicons.font).catch(() => {});
+
         const savedToken = await Storage.getItem(AUTH_TOKEN_KEY);
         if (savedToken) {
           const res = await AuthService.getMe(savedToken);
@@ -171,19 +185,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               name: res.user.fullName,
               email: res.user.email,
               phone: res.user.phoneNumber,
-              avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+              avatar: res.user.avatar || '',
               isProvider: res.user.providerProfile?.isProvider || false,
               role: res.user.role,
+              providerProfile: res.user.providerProfile as any,
             });
           } else {
             await Storage.removeItem(AUTH_TOKEN_KEY);
           }
         }
       } catch (e) {
-        console.warn('Session restoration failed:', e);
+        console.warn('App initialization warning:', e);
+      } finally {
+        setIsAppReady(true);
       }
     };
-    restoreSession();
+    initializeApp();
   }, []);
 
   // 3. Pending request form preservation across Auth
@@ -207,6 +224,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 7. Auth Modal
   const [authModalVisible, setAuthModalVisible] = useState<boolean>(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>('signin');
 
   // 8. Request Submitted Success Modal
   const [requestSubmittedVisible, setRequestSubmittedVisible] = useState<boolean>(false);
@@ -257,9 +275,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: res.user.fullName,
         email: res.user.email,
         phone: res.user.phoneNumber,
-        avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+        avatar: res.user.avatar || '',
         isProvider: res.user.providerProfile?.isProvider || false,
         role: res.user.role,
+        providerProfile: res.user.providerProfile as any,
       });
       setAuthModalVisible(false);
       if (pendingCallback) {
@@ -291,9 +310,97 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       name: 'Guest User',
       email: '',
       phone: '',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
       isProvider: false,
     });
+  };
+
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    setUser((prev) => ({
+      ...prev,
+      ...updates,
+    }));
+  };
+
+  const updatePersonalProfile = async (payload: {
+    fullName?: string;
+    phoneNumber?: string;
+    avatar?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    // Optimistic local update
+    setUser((prev) => ({
+      ...prev,
+      ...(payload.fullName ? { name: payload.fullName } : {}),
+      ...(payload.phoneNumber ? { phone: payload.phoneNumber } : {}),
+      ...(payload.avatar !== undefined ? { avatar: payload.avatar } : {}),
+    }));
+
+    if (!token) {
+      return { success: true, message: 'Profile updated locally.' };
+    }
+
+    const res = await AuthService.updateProfile(token, payload);
+    if (res.success && res.user) {
+      setUser((prev) => ({
+        ...prev,
+        name: res.user!.fullName,
+        phone: res.user!.phoneNumber,
+        avatar: res.user!.avatar || prev.avatar,
+      }));
+      return { success: true, message: res.message };
+    }
+
+    return { success: false, message: res.message };
+  };
+
+  const becomeProvider = async (data: BecomeProviderPayload): Promise<{ success: boolean; message: string }> => {
+    if (!token) {
+      return { success: false, message: 'You must be logged in to become a provider.' };
+    }
+
+    const res = await ProviderService.becomeProvider(token, data);
+    if (res.success && res.providerProfile) {
+      setUser((prev) => ({
+        ...prev,
+        isProvider: true,
+        providerProfile: res.providerProfile,
+      }));
+      return { success: true, message: res.message };
+    }
+
+    return { success: false, message: res.message };
+  };
+
+  const updateProvider = async (data: UpdateProviderPayload): Promise<{ success: boolean; message: string }> => {
+    if (!token) {
+      // Mock fallback if offline or unauthenticated testing
+      setUser((prev) => ({
+        ...prev,
+        providerProfile: prev.providerProfile
+          ? {
+              ...prev.providerProfile,
+              ...data,
+              profession: data.profession || prev.providerProfile.profession,
+              specializations: data.specializations || prev.providerProfile.specializations,
+              location: data.location !== undefined ? data.location : prev.providerProfile.location,
+              description: data.description !== undefined ? data.description : prev.providerProfile.description,
+              coverImage: data.coverImage !== undefined ? data.coverImage : prev.providerProfile.coverImage,
+            }
+          : undefined,
+      }));
+      return { success: true, message: 'Profile updated locally.' };
+    }
+
+    const res = await ProviderService.updateProviderProfile(token, data);
+    if (res.success && res.providerProfile) {
+      setUser((prev) => ({
+        ...prev,
+        providerProfile: res.providerProfile,
+      }));
+      return { success: true, message: res.message };
+    }
+
+    return { success: false, message: res.message };
   };
 
   const activateProvider = (proData?: Partial<Professional>) => {
@@ -334,10 +441,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPreselectedPro(undefined);
   };
 
-  const openAuthModal = (afterAuthCallback?: () => void) => {
+  const openAuthModal = (afterAuthCallback?: () => void, initialMode: 'signin' | 'signup' = 'signin') => {
     if (afterAuthCallback) {
       setPendingCallback(() => afterAuthCallback);
     }
+    setAuthInitialMode(initialMode);
     setAuthModalVisible(true);
   };
 
@@ -536,6 +644,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         appPhase,
         setAppPhase,
+        isAppReady,
         language,
         setLanguage,
         authStatus,
@@ -547,7 +656,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         login,
         register,
         logout,
+        updateUserProfile,
+        updatePersonalProfile,
         activateProvider,
+        becomeProvider,
+        updateProvider,
         pendingRequestDraft,
         setPendingRequestDraft,
         services,
@@ -566,6 +679,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         openCreateRequest,
         closeCreateRequest,
         authModalVisible,
+        authInitialMode,
         openAuthModal,
         closeAuthModal,
         requestSubmittedVisible,

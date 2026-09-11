@@ -17,15 +17,16 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onFinish,
-  duration = 2000,
+  duration = 1600,
 }) => {
-  const { setAppPhase } = useApp();
+  const { setAppPhase, isAppReady } = useApp();
 
   const logoScale = useState(new Animated.Value(0.85))[0];
   const logoOpacity = useState(new Animated.Value(0))[0];
   const textOpacity = useState(new Animated.Value(0))[0];
   const progressWidth = useState(new Animated.Value(0))[0];
   const screenFadeOut = useState(new Animated.Value(1))[0];
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   useEffect(() => {
     // 1. Logo entrance
@@ -52,16 +53,24 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       }).start();
     }, 250);
 
-    // 3. Subtle progress line
+    // 3. Smooth progress line
     Animated.timing(progressWidth, {
       toValue: 1,
-      duration: duration - 300,
+      duration: duration,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
     }).start();
 
-    // 4. Smooth transition to LANGUAGE
     const timer = setTimeout(() => {
+      setMinTimeElapsed(true);
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 4. Smooth transition only when both min entrance animation & all assets are ready
+  useEffect(() => {
+    if (minTimeElapsed && isAppReady) {
       Animated.timing(screenFadeOut, {
         toValue: 0,
         duration: 350,
@@ -74,10 +83,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           setAppPhase('LANGUAGE');
         }
       });
-    }, duration);
-
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  }, [minTimeElapsed, isAppReady]);
 
   const progressInterpolated = progressWidth.interpolate({
     inputRange: [0, 1],
