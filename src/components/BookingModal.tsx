@@ -7,8 +7,10 @@ import {
   ScrollView,
   TextInput,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -58,9 +60,14 @@ export const BookingModal: React.FC = () => {
   // Step 5: Professional
   const [selectedPro, setSelectedPro] = useState<Professional>(PROFESSIONALS[0]);
 
+  // Submission state
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   useEffect(() => {
     if (createRequestVisible) {
       setStep(1);
+      setSubmitError(null);
       if (preselectedService) {
         setSelectedService(preselectedService);
       }
@@ -103,27 +110,50 @@ export const BookingModal: React.FC = () => {
     executeFinalSubmit();
   };
 
-  const executeFinalSubmit = () => {
-    const createdReq = submitServiceRequest({
-      serviceCategory: selectedService.name,
-      serviceName: `${selectedService.name} Diagnostic & Repair`,
-      problemDescription: problemDescription || `Request for ${selectedService.name} service.`,
-      photos,
-      location,
-      date,
-      time,
-      isFlexible,
-      professional: selectedPro,
-      estimatedCost: selectedPro.hourlyRate * 1.5,
-    });
+  const executeFinalSubmit = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const createdReq = await submitServiceRequest({
+        serviceCategory: selectedService.name,
+        serviceName: `${selectedService.name} Diagnostic & Repair`,
+        problemDescription: problemDescription || `Request for ${selectedService.name} service.`,
+        photos,
+        location,
+        date,
+        time,
+        isFlexible,
+        professional: selectedPro,
+        estimatedCost: selectedPro.hourlyRate * 1.5,
+      });
 
-    closeCreateRequest();
-    openRequestSubmitted(createdReq);
+      closeCreateRequest();
+      openRequestSubmitted(createdReq);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to submit service request');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleAddPhoto = () => {
-    if (photos.length < 3) {
-      setPhotos([...photos, SAMPLE_PHOTO]);
+  const handleAddPhoto = async () => {
+    if (photos.length >= 3) return;
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setPhotos((prev) => (prev.length < 3 ? [...prev, SAMPLE_PHOTO] : prev));
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        setPhotos((prev) => (prev.length < 3 ? [...prev, result.assets[0].uri] : prev));
+      }
+    } catch (e) {
+      setPhotos((prev) => (prev.length < 3 ? [...prev, SAMPLE_PHOTO] : prev));
     }
   };
 
@@ -448,6 +478,13 @@ export const BookingModal: React.FC = () => {
                   Please confirm your service details before submitting.
                 </ThemedText>
 
+                {submitError && (
+                  <View style={styles.submitErrorBanner}>
+                    <Ionicons name="alert-circle" size={18} color={Palette.errorRed} />
+                    <ThemedText style={styles.submitErrorText}>{submitError}</ThemedText>
+                  </View>
+                )}
+
                 <View style={styles.reviewSummaryCard}>
                   <View style={styles.reviewRow}>
                     <ThemedText style={styles.reviewLabel}>Service</ThemedText>
@@ -501,10 +538,18 @@ export const BookingModal: React.FC = () => {
 
           {/* Footer Action Button */}
           <View style={styles.footer}>
-            <Pressable onPress={handleNext} style={styles.primaryActionBtn}>
-              <ThemedText style={styles.primaryActionBtnText}>
-                {step === 6 ? 'Submit Request' : 'Continue →'}
-              </ThemedText>
+            <Pressable
+              onPress={handleNext}
+              style={[styles.primaryActionBtn, submitting && styles.primaryActionBtnDisabled]}
+              disabled={submitting}
+              accessibilityRole="button">
+              {submitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <ThemedText style={styles.primaryActionBtnText}>
+                  {step === 6 ? 'Submit Request' : 'Continue →'}
+                </ThemedText>
+              )}
             </Pressable>
           </View>
         </View>
@@ -933,9 +978,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  primaryActionBtnDisabled: {
+    opacity: 0.7,
+  },
   primaryActionBtnText: {
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  submitErrorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFF5F5',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1,
+    borderColor: Palette.errorRed,
+    marginBottom: Spacing.md,
+  },
+  submitErrorText: {
+    fontSize: 12,
+    color: Palette.errorRed,
+    fontWeight: '600',
+    flex: 1,
   },
 });

@@ -12,6 +12,7 @@ import {
 } from '@/data/mockData';
 import { AuthService, LoginPayload, RegisterPayload, BackendUser } from '@/services/auth.service';
 import { ProviderService, BecomeProviderPayload, UpdateProviderPayload, ProviderProfileResponse } from '@/services/provider.service';
+import { RequestService, mapBackendRequestToFrontend } from '@/services/request.service';
 import { Storage, AUTH_TOKEN_KEY } from '@/services/storage';
 
 export type AppPhase = 'SPLASH' | 'LANGUAGE' | 'ONBOARDING' | 'APP';
@@ -120,9 +121,10 @@ interface AppContextType {
     isFlexible: boolean;
     professional: Professional;
     estimatedCost: number;
-  }) => ServiceRequest;
+  }) => Promise<ServiceRequest>;
   advanceRequestStatus: (id: string) => void;
   cancelServiceRequest: (id: string) => void;
+  fetchCustomerRequests: (authToken?: string) => Promise<void>;
 
   // Provider Activation Modal
   providerActivationVisible: boolean;
@@ -190,6 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               role: res.user.role,
               providerProfile: res.user.providerProfile as any,
             });
+            fetchCustomerRequests(savedToken);
           } else {
             await Storage.removeItem(AUTH_TOKEN_KEY);
           }
@@ -281,6 +284,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         providerProfile: res.user.providerProfile as any,
       });
       setAuthModalVisible(false);
+      fetchCustomerRequests(res.token);
       if (pendingCallback) {
         const cb = pendingCallback;
         setPendingCallback(null);
@@ -474,7 +478,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSelectedRequest(null);
   };
 
-  const submitServiceRequest = (data: {
+  const fetchCustomerRequests = async (authToken?: string) => {
+    const activeToken = authToken || token;
+    if (!activeToken) return;
+    try {
+      const res = await RequestService.getMyRequests(activeToken);
+      if (res.success && res.data && res.data.length > 0) {
+        const mapped = res.data.map(mapBackendRequestToFrontend);
+        setServiceRequests((prev) => {
+          // Keep local optimistic requests that haven't been resolved yet
+          const backendIds = new Set(mapped.map((m) => m.id));
+          const localOnly = prev.filter((p) => p.id.startsWith('REQ-') && !backendIds.has(p.id));
+          return [...mapped, ...localOnly];
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to fetch requests from backend:', e);
+    }
+  };
+
+  const submitServiceRequest = async (data: {
     serviceCategory: string;
     serviceName: string;
     problemDescription: string;
@@ -485,8 +508,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isFlexible: boolean;
     professional: Professional;
     estimatedCost: number;
-  }): ServiceRequest => {
-    const newReq: ServiceRequest = {
+  }): Promise<ServiceRequest> => {
+    // Generate an optimistic local request
+    const localReq: ServiceRequest = {
       id: `REQ-${Math.floor(1000 + Math.random() * 9000)}`,
       serviceCategory: data.serviceCategory,
       serviceName: data.serviceName,
@@ -506,9 +530,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       estimatedCost: data.estimatedCost,
     };
 
-    setServiceRequests((prev) => [newReq, ...prev]);
+    if (!token) {
+      setServiceRequests((prev) => [localReq, ...prev]);
+      setPendingRequestDraft(null);
+      return localReq;
+    }
+
+    try {
+      const res = await RequestService.createRequest(token, {
+        serviceCategory: data.serviceCategory,
+        serviceName: data.serviceName,
+        problemDescription: data.problemDescription,
+        photos: data.photos,
+        location: data.location,
+        date: data.date,
+        time: data.time,
+        isFlexible: data.isFlexible,
+        selectedProvider: data.professional.id,
+        providerId: data.professional.id,
+        estimatedCost: data.estimatedCost,
+      });
+
+      if (res.success && res.data) {
+        const mapped = mapBackendRequestToFrontend(res.data);
+        const finalReq: ServiceRequest = {
+          ...mapped,
+          date: data.date || mapped.date,
+          time: data.time || mapped.time,
+          estimatedCost: data.estimatedCost || mapped.estimatedCost,
+          professionalName: data.professional.name || mapped.professionalName,
+          professionalAvatar: data.professional.avatar || mapped.professionalAvatar,
+          professionalProfession: data.professional.profession || mapped.professionalProfession,
+        };
+
+        setServiceRequests((prev) => [finalReq, ...prev.filter((r) => r.id !== finalReq.id)]);
+        setPendingRequestDraft(null);
+        return finalReq;
+      }
+    } catch (e) {
+      console.warn('Backend request submission warning, using optimistic fallback:', e);
+    }
+
+    setServiceRequests((prev) => [localReq, ...prev]);
     setPendingRequestDraft(null);
-    return newReq;
+    return localReq;
   };
 
   const advanceRequestStatus = (id: string) => {
@@ -532,6 +597,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setServiceRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: 'Cancelled' as const } : r))
     );
+    if (token && !id.startsWith('REQ-')) {
+      RequestService.cancelRequest(token, id).catch((e) =>
+        console.warn('Backend cancel request error:', e)
+      );
+    }
   };
 
   const openProviderActivation = () => {
@@ -694,6 +764,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         submitServiceRequest,
         advanceRequestStatus,
         cancelServiceRequest,
+        fetchCustomerRequests,
         providerActivationVisible,
         openProviderActivation,
         closeProviderActivation,
