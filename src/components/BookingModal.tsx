@@ -38,6 +38,7 @@ export const BookingModal: React.FC = () => {
     submitServiceRequest,
     openRequestSubmitted,
     openProfessionalProfile,
+    professionals,
   } = useApp();
 
   const [step, setStep] = useState(1);
@@ -58,7 +59,8 @@ export const BookingModal: React.FC = () => {
   const [isFlexible, setIsFlexible] = useState(false);
 
   // Step 5: Professional
-  const [selectedPro, setSelectedPro] = useState<Professional>(PROFESSIONALS[0]);
+  const proList = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
+  const [selectedPro, setSelectedPro] = useState<Professional>(proList[0]);
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -74,13 +76,13 @@ export const BookingModal: React.FC = () => {
       if (preselectedPro) {
         setSelectedPro(preselectedPro);
       } else {
-        const matching = PROFESSIONALS.find(
+        const matching = proList.find(
           (p) => p.category.toLowerCase() === (preselectedService?.id || 'plumbing').toLowerCase()
         );
         if (matching) setSelectedPro(matching);
       }
     }
-  }, [createRequestVisible, preselectedService, preselectedPro]);
+  }, [createRequestVisible, preselectedService, preselectedPro, proList]);
 
   if (!createRequestVisible) return null;
 
@@ -224,7 +226,7 @@ export const BookingModal: React.FC = () => {
                         key={srv.id}
                         onPress={() => {
                           setSelectedService(srv);
-                          const matching = PROFESSIONALS.find(
+                          const matching = proList.find(
                             (p) => p.category.toLowerCase() === srv.id.toLowerCase()
                           );
                           if (matching) setSelectedPro(matching);
@@ -405,7 +407,7 @@ export const BookingModal: React.FC = () => {
                 </ThemedText>
 
                 <View style={styles.proList}>
-                  {PROFESSIONALS.map((pro) => {
+                  {proList.map((pro) => {
                     const isSelected = pro.id === selectedPro.id;
                     return (
                       <View

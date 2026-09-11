@@ -11,7 +11,13 @@ import {
   MessageItem,
 } from '@/data/mockData';
 import { AuthService, LoginPayload, RegisterPayload, BackendUser } from '@/services/auth.service';
-import { ProviderService, BecomeProviderPayload, UpdateProviderPayload, ProviderProfileResponse } from '@/services/provider.service';
+import {
+  ProviderService,
+  BecomeProviderPayload,
+  UpdateProviderPayload,
+  ProviderProfileResponse,
+  mapBackendProviderToProfessional,
+} from '@/services/provider.service';
 import { RequestService, mapBackendRequestToFrontend } from '@/services/request.service';
 import { Storage, AUTH_TOKEN_KEY } from '@/services/storage';
 
@@ -84,6 +90,7 @@ interface AppContextType {
   professionalProfileVisible: boolean;
   openProfessionalProfile: (pro: Professional) => void;
   closeProfessionalProfile: () => void;
+  fetchProviders: () => Promise<void>;
 
   // 6-Step Service Request Flow
   createRequestVisible: boolean;
@@ -197,6 +204,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             await Storage.removeItem(AUTH_TOKEN_KEY);
           }
         }
+        // Fetch all backend service providers / artisans
+        await fetchProviders();
       } catch (e) {
         console.warn('App initialization warning:', e);
       } finally {
@@ -369,6 +378,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isProvider: true,
         providerProfile: res.providerProfile,
       }));
+      fetchProviders();
       return { success: true, message: res.message };
     }
 
@@ -401,10 +411,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ...prev,
         providerProfile: res.providerProfile,
       }));
+      fetchProviders();
       return { success: true, message: res.message };
     }
 
     return { success: false, message: res.message };
+  };
+
+  const fetchProviders = async () => {
+    try {
+      const res = await ProviderService.getProviders();
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        const backendPros: Professional[] = res.data.map(mapBackendProviderToProfessional);
+        // Combine backend artisans with mock professionals (deduplicating by ID, putting backend artisans first)
+        const backendIds = new Set(backendPros.map((p) => p.id));
+        const filteredMock = PROFESSIONALS.filter((p) => !backendIds.has(p.id));
+        setProfessionals([...backendPros, ...filteredMock]);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch providers from backend:', e);
+    }
   };
 
   const activateProvider = (proData?: Partial<Professional>) => {
@@ -743,6 +769,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         professionalProfileVisible,
         openProfessionalProfile,
         closeProfessionalProfile,
+        fetchProviders,
         createRequestVisible,
         preselectedService,
         preselectedPro,

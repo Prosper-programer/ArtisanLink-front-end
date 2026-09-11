@@ -31,6 +31,7 @@ export default function ExploreScreen() {
     startChatWithPro,
     selectedCategoryFilter,
     setSelectedCategoryFilter,
+    professionals,
     authStatus,
     openAuthModal,
     language,
@@ -68,7 +69,8 @@ export default function ExploreScreen() {
   };
 
   const filteredPros = useMemo(() => {
-    return PROFESSIONALS.filter((p) => {
+    const list = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
+    return list.filter((p) => {
       // Category Filter
       if (
         selectedCategoryFilter !== 'all' &&
@@ -98,7 +100,7 @@ export default function ExploreScreen() {
       }
       return true;
     });
-  }, [selectedCategoryFilter, quickFilter, searchQuery]);
+  }, [professionals, selectedCategoryFilter, quickFilter, searchQuery]);
 
   const handleChatPress = (pro: Professional) => {
     if (isGuest) {

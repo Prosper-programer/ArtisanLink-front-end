@@ -39,6 +39,7 @@ export default function RequestsScreen() {
     authStatus,
     openAuthModal,
     openProfessionalProfile,
+    professionals,
     language,
   } = useApp();
 
@@ -126,7 +127,8 @@ export default function RequestsScreen() {
       openAuthModal();
       return;
     }
-    const targetPro = PROFESSIONALS.find((p) => p.id === req.professionalId);
+    const allPros = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
+    const targetPro = allPros.find((p) => p.id === req.professionalId);
     if (targetPro) {
       startChatWithPro(targetPro);
     } else {
@@ -135,7 +137,8 @@ export default function RequestsScreen() {
   };
 
   const handleBookAgain = (req: ServiceRequest) => {
-    const targetPro = PROFESSIONALS.find((p) => p.id === req.professionalId);
+    const allPros = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
+    const targetPro = allPros.find((p) => p.id === req.professionalId);
     openCreateRequest(undefined, targetPro);
   };
 

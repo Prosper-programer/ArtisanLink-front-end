@@ -135,6 +135,7 @@ export default function HomeScreen() {
     setLanguage,
     openAuthModal,
     openServiceDetails,
+    professionals,
     openProfessionalProfile,
     openProviderActivation,
   } = useApp();
@@ -360,7 +361,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.proList}>
-                {PROFESSIONALS.slice(0, 4).map((pro) => (
+                {(professionals || PROFESSIONALS).slice(0, 4).map((pro) => (
                   <Pressable
                     key={pro.id}
                     onPress={() => openProfessionalProfile(pro)}
