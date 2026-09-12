@@ -238,4 +238,236 @@ export const RequestService = {
       };
     }
   },
+
+  /**
+   * Fetch incoming service requests assigned to the authenticated provider.
+   * GET /api/provider/requests
+   */
+  async getProviderRequests(
+    token: string
+  ): Promise<{ success: boolean; message: string; data?: BackendServiceRequestDoc[] }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/provider/requests`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to fetch provider requests',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Provider requests fetched successfully',
+        data: data.data || [],
+      };
+    } catch (error: any) {
+      console.error('RequestService.getProviderRequests error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while fetching provider requests',
+      };
+    }
+  },
+
+  /**
+   * Provider accepts an assigned service request.
+   * PUT /api/provider/requests/:id/accept
+   */
+  async acceptRequest(
+    token: string,
+    requestId: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/provider/requests/${requestId}/accept`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to accept request',
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Service request accepted',
+        data: data.data,
+      };
+    } catch (error: any) {
+      console.error('RequestService.acceptRequest error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while accepting request',
+      };
+    }
+  },
+
+  /**
+   * Provider declines an assigned service request.
+   * PUT /api/provider/requests/:id/reject
+   */
+  async rejectRequest(
+    token: string,
+    requestId: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/provider/requests/${requestId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to decline request',
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Service request declined',
+        data: data.data,
+      };
+    } catch (error: any) {
+      console.error('RequestService.rejectRequest error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while declining request',
+      };
+    }
+  },
+
+  /**
+   * Fetch active and past jobs for the authenticated user.
+   * GET /api/jobs
+   */
+  async getJobs(
+    token: string
+  ): Promise<{ success: boolean; message: string; data?: any[] }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to fetch jobs',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Jobs fetched successfully',
+        data: data.data || [],
+      };
+    } catch (error: any) {
+      console.error('RequestService.getJobs error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while fetching jobs',
+      };
+    }
+  },
+
+  /**
+   * Provider starts work on a job.
+   * PUT /api/jobs/:id/start
+   */
+  async startJob(
+    token: string,
+    jobId: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/start`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to start job',
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Job started successfully',
+        data: data.data,
+      };
+    } catch (error: any) {
+      console.error('RequestService.startJob error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while starting job',
+      };
+    }
+  },
+
+  /**
+   * Provider marks a job as completed.
+   * PUT /api/jobs/:id/complete
+   */
+  async completeJob(
+    token: string,
+    jobId: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/complete`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || 'Failed to complete job',
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || 'Job completed successfully',
+        data: data.data,
+      };
+    } catch (error: any) {
+      console.error('RequestService.completeJob error:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error while completing job',
+      };
+    }
+  },
 };

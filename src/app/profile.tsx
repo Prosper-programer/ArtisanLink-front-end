@@ -43,6 +43,10 @@ export default function ProfileScreen() {
     logout,
     openProviderActivation,
     serviceRequests,
+    providerRequests,
+    providerJobs,
+    acceptProviderRequest,
+    rejectProviderRequest,
     openRequestDetails,
     language,
     setLanguage,
@@ -135,11 +139,15 @@ export default function ProfileScreen() {
   const isFrench = language === "fr";
   const isProviderRole = user.isProvider && activeRole === "provider";
 
-  const newRequests = serviceRequests.filter((r) => r.status === "Sent");
-  const activeJobs = serviceRequests.filter(
-    (r) => r.status === "Accepted" || r.status === "In Progress",
-  );
-  const completedJobs = serviceRequests.filter((r) => r.status === "Completed");
+  // In Provider mode, show provider requests & jobs from backend; fallback to serviceRequests if empty
+  const relevantRequests = isProviderRole && providerRequests.length > 0 ? providerRequests : serviceRequests;
+  const newRequests = relevantRequests.filter((r) => r.status === "Sent");
+  const activeJobs = isProviderRole && providerJobs.length > 0
+    ? providerJobs.filter((j: any) => j.status === 'accepted' || j.status === 'in_progress')
+    : serviceRequests.filter((r) => r.status === "Accepted" || r.status === "In Progress");
+  const completedJobs = isProviderRole && providerJobs.length > 0
+    ? providerJobs.filter((j: any) => j.status === 'completed')
+    : serviceRequests.filter((r) => r.status === "Completed");
 
   const handleHelpCenter = () => {
     setActiveInfoModal({
@@ -538,7 +546,7 @@ export default function ProfileScreen() {
                   </ThemedText>
                 </View>
               ) : (
-                newRequests.slice(0, 2).map((req) => (
+                newRequests.slice(0, 3).map((req) => (
                   <View key={req.id} style={styles.providerReqCard}>
                     <View style={styles.reqTop}>
                       <View style={styles.reqCategoryBadge}>
@@ -551,9 +559,78 @@ export default function ProfileScreen() {
                     <ThemedText style={styles.reqTitle}>
                       {req.serviceName}
                     </ThemedText>
-                    <ThemedText style={styles.reqDesc}>
+                    <ThemedText style={styles.reqDesc} numberOfLines={2}>
                       {req.problemDescription}
                     </ThemedText>
+
+                    {/* Action buttons */}
+                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                      <Pressable
+                        onPress={() => {
+                          Alert.alert(
+                            isFrench ? "Accepter la demande" : "Accept Request",
+                            isFrench ? "Voulez-vous accepter cette demande et créer la mission ?" : "Do you want to accept this request and start the job?",
+                            [
+                              { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                              {
+                                text: isFrench ? "Accepter" : "Accept",
+                                onPress: async () => {
+                                  const res = await acceptProviderRequest(req.id);
+                                  Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: Palette.primary,
+                          paddingVertical: 9,
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          gap: 6,
+                        }}>
+                        <Ionicons name="checkmark-circle" size={15} color="#FFFFFF" />
+                        <ThemedText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>
+                          {isFrench ? "Accepter" : "Accept"}
+                        </ThemedText>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => {
+                          Alert.alert(
+                            isFrench ? "Refuser la demande" : "Decline Request",
+                            isFrench ? "Êtes-vous sûr de vouloir refuser cette demande ?" : "Are you sure you want to decline this request?",
+                            [
+                              { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                              {
+                                text: isFrench ? "Refuser" : "Decline",
+                                style: "destructive",
+                                onPress: async () => {
+                                  const res = await rejectProviderRequest(req.id);
+                                  Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                        style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 9,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: Palette.outline,
+                          backgroundColor: Palette.surface,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                        <ThemedText style={{ color: Palette.secondaryText, fontSize: 13, fontWeight: '600' }}>
+                          {isFrench ? "Refuser" : "Decline"}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   </View>
                 ))
               )}

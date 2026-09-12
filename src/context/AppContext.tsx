@@ -133,6 +133,15 @@ interface AppContextType {
   cancelServiceRequest: (id: string) => void;
   fetchCustomerRequests: (authToken?: string) => Promise<void>;
 
+  // Provider Requests & Job Management
+  providerRequests: ServiceRequest[];
+  providerJobs: any[];
+  fetchProviderRequestsAndJobs: (authToken?: string) => Promise<void>;
+  acceptProviderRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
+  rejectProviderRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
+  startProviderJob: (jobId: string) => Promise<{ success: boolean; message: string }>;
+  completeProviderJob: (jobId: string) => Promise<{ success: boolean; message: string }>;
+
   // Provider Activation Modal
   providerActivationVisible: boolean;
   openProviderActivation: () => void;
@@ -200,6 +209,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               providerProfile: res.user.providerProfile as any,
             });
             fetchCustomerRequests(savedToken);
+            if (res.user.providerProfile?.isProvider) {
+              fetchProviderRequestsAndJobs(savedToken);
+            }
           } else {
             await Storage.removeItem(AUTH_TOKEN_KEY);
           }
@@ -246,6 +258,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(INITIAL_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [requestDetailsVisible, setRequestDetailsVisible] = useState<boolean>(false);
+
+  // 9b. Provider Requests & Jobs
+  const [providerRequests, setProviderRequests] = useState<ServiceRequest[]>([]);
+  const [providerJobs, setProviderJobs] = useState<any[]>([]);
 
   // 10. Provider Activation Wizard
   const [providerActivationVisible, setProviderActivationVisible] = useState<boolean>(false);
@@ -294,6 +310,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       setAuthModalVisible(false);
       fetchCustomerRequests(res.token);
+      if (res.user.providerProfile?.isProvider) {
+        fetchProviderRequestsAndJobs(res.token);
+      }
       if (pendingCallback) {
         const cb = pendingCallback;
         setPendingCallback(null);
@@ -630,6 +649,85 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const fetchProviderRequestsAndJobs = async (authToken?: string) => {
+    const activeToken = authToken || token;
+    if (!activeToken) return;
+
+    try {
+      const [reqRes, jobRes] = await Promise.all([
+        RequestService.getProviderRequests(activeToken),
+        RequestService.getJobs(activeToken),
+      ]);
+
+      if (reqRes.success && reqRes.data) {
+        const mapped = reqRes.data.map(mapBackendRequestToFrontend);
+        setProviderRequests(mapped);
+      }
+
+      if (jobRes.success && jobRes.data) {
+        setProviderJobs(jobRes.data);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch provider requests and jobs:', e);
+    }
+  };
+
+  const acceptProviderRequest = async (
+    requestId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!token) return { success: false, message: 'You must be logged in' };
+
+    const res = await RequestService.acceptRequest(token, requestId);
+    if (res.success) {
+      await fetchProviderRequestsAndJobs(token);
+      await fetchCustomerRequests(token);
+      return { success: true, message: res.message || 'Request accepted successfully' };
+    }
+    return { success: false, message: res.message || 'Failed to accept request' };
+  };
+
+  const rejectProviderRequest = async (
+    requestId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!token) return { success: false, message: 'You must be logged in' };
+
+    const res = await RequestService.rejectRequest(token, requestId);
+    if (res.success) {
+      await fetchProviderRequestsAndJobs(token);
+      await fetchCustomerRequests(token);
+      return { success: true, message: res.message || 'Request declined' };
+    }
+    return { success: false, message: res.message || 'Failed to decline request' };
+  };
+
+  const startProviderJob = async (
+    jobId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!token) return { success: false, message: 'You must be logged in' };
+
+    const res = await RequestService.startJob(token, jobId);
+    if (res.success) {
+      await fetchProviderRequestsAndJobs(token);
+      await fetchCustomerRequests(token);
+      return { success: true, message: res.message || 'Job started' };
+    }
+    return { success: false, message: res.message || 'Failed to start job' };
+  };
+
+  const completeProviderJob = async (
+    jobId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!token) return { success: false, message: 'You must be logged in' };
+
+    const res = await RequestService.completeJob(token, jobId);
+    if (res.success) {
+      await fetchProviderRequestsAndJobs(token);
+      await fetchCustomerRequests(token);
+      return { success: true, message: res.message || 'Job completed' };
+    }
+    return { success: false, message: res.message || 'Failed to complete job' };
+  };
+
   const openProviderActivation = () => {
     setProviderActivationVisible(true);
   };
@@ -792,6 +890,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         advanceRequestStatus,
         cancelServiceRequest,
         fetchCustomerRequests,
+        providerRequests,
+        providerJobs,
+        fetchProviderRequestsAndJobs,
+        acceptProviderRequest,
+        rejectProviderRequest,
+        startProviderJob,
+        completeProviderJob,
         providerActivationVisible,
         openProviderActivation,
         closeProviderActivation,

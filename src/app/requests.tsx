@@ -40,11 +40,20 @@ export default function RequestsScreen() {
     openAuthModal,
     openProfessionalProfile,
     professionals,
+    activeRole,
+    user,
+    providerRequests,
+    providerJobs,
+    acceptProviderRequest,
+    rejectProviderRequest,
+    startProviderJob,
+    completeProviderJob,
     language,
   } = useApp();
 
   const isGuest = authStatus === "guest";
   const isFrench = language === "fr";
+  const isProviderRole = user.isProvider && activeRole === "provider";
 
   // 2. Request Lifecycle Segmentation (Segmented Tabs)
   const [activeTab, setActiveTab] = useState<
@@ -66,23 +75,27 @@ export default function RequestsScreen() {
     return () => clearTimeout(timer);
   }, [activeTab]);
 
+  // Source list: In Provider View, use providerRequests from backend; fallback to serviceRequests
+  const activeRequestsList =
+    isProviderRole && providerRequests.length > 0 ? providerRequests : serviceRequests;
+
   // Counts for each tab
-  const activeCount = serviceRequests.filter(
+  const activeCount = activeRequestsList.filter(
     (r) =>
       r.status === "Sent" ||
       r.status === "Accepted" ||
       r.status === "In Progress",
   ).length;
-  const completedCount = serviceRequests.filter(
+  const completedCount = activeRequestsList.filter(
     (r) => r.status === "Completed",
   ).length;
-  const cancelledCount = serviceRequests.filter(
+  const cancelledCount = activeRequestsList.filter(
     (r) => r.status === "Cancelled",
   ).length;
 
   // Filtered requests based on activeTab, search, and sorting
   const filteredRequests = useMemo(() => {
-    let list = serviceRequests.filter((r) => {
+    let list = activeRequestsList.filter((r) => {
       if (activeTab === "active") {
         return (
           r.status === "Sent" ||
@@ -120,7 +133,7 @@ export default function RequestsScreen() {
       }
       return 0; // default date order preserved
     });
-  }, [serviceRequests, activeTab, searchQuery, sortBy]);
+  }, [activeRequestsList, activeTab, searchQuery, sortBy]);
 
   const handleChat = (req: ServiceRequest) => {
     if (isGuest) {
@@ -603,8 +616,157 @@ export default function RequestsScreen() {
                             </ThemedText>
                           </Pressable>
 
-                          {/* Primary Action Button */}
-                          {isScheduled ? (
+                          {/* Provider vs Customer Actions */}
+                          {isProviderRole ? (
+                            <View style={{ flexDirection: 'row', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
+                              {req.status === 'Sent' && (
+                                <>
+                                  <Pressable
+                                    onPress={() => {
+                                      Alert.alert(
+                                        isFrench ? "Accepter la demande" : "Accept Request",
+                                        isFrench ? "Confirmez-vous l'acceptation de cette mission ?" : "Do you want to accept this request?",
+                                        [
+                                          { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                                          {
+                                            text: isFrench ? "Accepter" : "Accept",
+                                            onPress: async () => {
+                                              const res = await acceptProviderRequest(req.id);
+                                              Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                    style={{
+                                      backgroundColor: Palette.primary,
+                                      paddingHorizontal: 14,
+                                      paddingVertical: 8,
+                                      borderRadius: 8,
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                    }}>
+                                    <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
+                                    <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                                      {isFrench ? "Accepter" : "Accept"}
+                                    </ThemedText>
+                                  </Pressable>
+
+                                  <Pressable
+                                    onPress={() => {
+                                      Alert.alert(
+                                        isFrench ? "Refuser" : "Decline",
+                                        isFrench ? "Refuser cette mission ?" : "Decline this request?",
+                                        [
+                                          { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                                          {
+                                            text: isFrench ? "Refuser" : "Decline",
+                                            style: "destructive",
+                                            onPress: async () => {
+                                              const res = await rejectProviderRequest(req.id);
+                                              Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                    style={{
+                                      paddingHorizontal: 12,
+                                      paddingVertical: 8,
+                                      borderRadius: 8,
+                                      borderWidth: 1,
+                                      borderColor: Palette.outline,
+                                      backgroundColor: Palette.surface,
+                                    }}>
+                                    <ThemedText style={{ color: Palette.secondaryText, fontSize: 12, fontWeight: '600' }}>
+                                      {isFrench ? "Refuser" : "Decline"}
+                                    </ThemedText>
+                                  </Pressable>
+                                </>
+                              )}
+
+                              {req.status === 'Accepted' && (
+                                <Pressable
+                                  onPress={() => {
+                                    const matchingJob = providerJobs.find(
+                                      (j: any) =>
+                                        j.serviceRequest?._id === req.id ||
+                                        j.serviceRequest === req.id
+                                    );
+                                    const targetId = matchingJob?._id || req.id;
+                                    Alert.alert(
+                                      isFrench ? "Démarrer la mission" : "Start Job",
+                                      isFrench ? "Indiquer que vous avez commencé le travail ?" : "Mark this job as started / in progress?",
+                                      [
+                                        { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                                        {
+                                          text: isFrench ? "Démarrer" : "Start",
+                                          onPress: async () => {
+                                            const res = await startProviderJob(targetId);
+                                            Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }}
+                                  style={{
+                                    backgroundColor: Palette.accent,
+                                    paddingHorizontal: 14,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}>
+                                  <Ionicons name="play" size={13} color="#FFFFFF" />
+                                  <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                                    {isFrench ? "Démarrer le travail" : "Start Job"}
+                                  </ThemedText>
+                                </Pressable>
+                              )}
+
+                              {req.status === 'In Progress' && (
+                                <Pressable
+                                  onPress={() => {
+                                    const matchingJob = providerJobs.find(
+                                      (j: any) =>
+                                        j.serviceRequest?._id === req.id ||
+                                        j.serviceRequest === req.id
+                                    );
+                                    const targetId = matchingJob?._id || req.id;
+                                    Alert.alert(
+                                      isFrench ? "Terminer la mission" : "Complete Job",
+                                      isFrench ? "Confirmez-vous que le travail est terminé avec succès ?" : "Confirm that this job is completed?",
+                                      [
+                                        { text: isFrench ? "Annuler" : "Cancel", style: "cancel" },
+                                        {
+                                          text: isFrench ? "Terminer" : "Complete",
+                                          onPress: async () => {
+                                            const res = await completeProviderJob(targetId);
+                                            Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }}
+                                  style={{
+                                    backgroundColor: '#059669',
+                                    paddingHorizontal: 14,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}>
+                                  <Ionicons name="checkmark-done" size={14} color="#FFFFFF" />
+                                  <ThemedText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                                    {isFrench ? "Marquer terminé" : "Mark Completed"}
+                                  </ThemedText>
+                                </Pressable>
+                              )}
+                            </View>
+                          ) : isScheduled ? (
                             <Pressable
                               onPress={() => setTrackingModalRequest(req)}
                               style={styles.primaryTrackBtn}
