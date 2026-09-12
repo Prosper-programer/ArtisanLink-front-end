@@ -24,4 +24,4 @@ const getDevHost = (): string => {
   return 'localhost';
 };
 
-export const API_BASE_URL = `http://${getDevHost()}:5000/api`;
+export const API_BASE_URL = `http://${getDevHost()}:5001/api`;
