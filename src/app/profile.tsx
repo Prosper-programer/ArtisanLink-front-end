@@ -139,13 +139,15 @@ export default function ProfileScreen() {
   const isFrench = language === "fr";
   const isProviderRole = user.isProvider && activeRole === "provider";
 
-  // In Provider mode, show provider requests & jobs from backend; fallback to serviceRequests if empty
-  const relevantRequests = isProviderRole && providerRequests.length > 0 ? providerRequests : serviceRequests;
-  const newRequests = relevantRequests.filter((r) => r.status === "Sent");
-  const activeJobs = isProviderRole && providerJobs.length > 0
+  // In Provider mode, strictly show provider requests & jobs from backend; in Customer mode show customer requests
+  const relevantRequests = isProviderRole ? providerRequests : serviceRequests;
+  const newRequests = isProviderRole
+    ? providerRequests.filter((r) => r.status === "Sent")
+    : serviceRequests.filter((r) => r.status === "Sent");
+  const activeJobs = isProviderRole
     ? providerJobs.filter((j: any) => j.status === 'accepted' || j.status === 'in_progress')
     : serviceRequests.filter((r) => r.status === "Accepted" || r.status === "In Progress");
-  const completedJobs = isProviderRole && providerJobs.length > 0
+  const completedJobs = isProviderRole
     ? providerJobs.filter((j: any) => j.status === 'completed')
     : serviceRequests.filter((r) => r.status === "Completed");
 

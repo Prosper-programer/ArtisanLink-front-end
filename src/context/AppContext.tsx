@@ -277,7 +277,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Role switching
   const toggleActiveRole = () => {
-    setActiveRole((prev) => (prev === 'customer' ? 'provider' : 'customer'));
+    setActiveRole((prev) => {
+      const nextRole = prev === 'customer' ? 'provider' : 'customer';
+      if (token) {
+        if (nextRole === 'provider') {
+          fetchProviderRequestsAndJobs(token);
+        } else {
+          fetchCustomerRequests(token);
+        }
+      }
+      return nextRole;
+    });
   };
 
   const login = async (credentials?: LoginPayload): Promise<{ success: boolean; message: string }> => {

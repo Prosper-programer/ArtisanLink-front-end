@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,8 +44,11 @@ export default function RequestsScreen() {
     professionals,
     activeRole,
     user,
+    token,
     providerRequests,
     providerJobs,
+    fetchProviderRequestsAndJobs,
+    fetchCustomerRequests,
     acceptProviderRequest,
     rejectProviderRequest,
     startProviderJob,
@@ -73,6 +77,33 @@ export default function RequestsScreen() {
     isProviderReviewingCustomer: boolean;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Sync data whenever switching roles or opening screen
+  useEffect(() => {
+    if (token) {
+      if (isProviderRole) {
+        fetchProviderRequestsAndJobs(token);
+      } else {
+        fetchCustomerRequests(token);
+      }
+    }
+  }, [isProviderRole, token]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (token) {
+        if (isProviderRole) {
+          await fetchProviderRequestsAndJobs(token);
+        } else {
+          await fetchCustomerRequests(token);
+        }
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -82,9 +113,8 @@ export default function RequestsScreen() {
     return () => clearTimeout(timer);
   }, [activeTab]);
 
-  // Source list: In Provider View, use providerRequests from backend; fallback to serviceRequests
-  const activeRequestsList =
-    isProviderRole && providerRequests.length > 0 ? providerRequests : serviceRequests;
+  // Source list: In Provider View, strictly use providerRequests. In Customer View, strictly use serviceRequests.
+  const activeRequestsList = isProviderRole ? providerRequests : serviceRequests;
 
   // Counts for each tab
   const activeCount = activeRequestsList.filter(
@@ -347,6 +377,14 @@ export default function RequestsScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Palette.primary]}
+              tintColor={Palette.primary}
+            />
+          }
         >
           {isGuest ? (
             /* DEDICATED SIGN-IN / CREATE ACCOUNT PROMPT FOR GUEST IN REQUESTS TAB */
