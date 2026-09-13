@@ -1,270 +1,123 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Image,
-  TextInput,
-  Alert,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import React from 'react';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import {
-  Palette,
-  Spacing,
-  BorderRadius,
-  BottomTabInset,
-  MaxContentWidth,
-  Shadows,
-} from "@/constants/theme";
-import { useApp } from "@/context/AppContext";
-import AppHeader from "@/components/AppHeader";
-import { SkeletonMessageRow } from "@/components/SkeletonLoader";
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Palette, Spacing, BorderRadius, BottomTabInset, MaxContentWidth, Shadows } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
+import AppHeader from '@/components/AppHeader';
 
 export default function MessagesScreen() {
   const router = useRouter();
-  const { chats, openChat, authStatus, openAuthModal, language } = useApp();
+  const { authStatus, openAuthModal, language } = useApp();
 
-  const isGuest = authStatus === "guest";
-  const isFrench = language === "fr";
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterActive, setFilterActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [filterActive]);
-
-  const filteredChats = useMemo(() => {
-    let list = chats;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.professionalName.toLowerCase().includes(q) ||
-          c.professionalProfession.toLowerCase().includes(q) ||
-          c.lastMessage.toLowerCase().includes(q),
-      );
-    }
-    if (filterActive) {
-      // Filter unread or online
-      list = list.filter((c) => c.unreadCount > 0 || c.online);
-    }
-    return list;
-  }, [chats, searchQuery, filterActive]);
+  const isGuest = authStatus === 'guest';
+  const isFrench = language === 'fr';
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-        {/* Unified App Header matching Marketplace Message Tab design */}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <AppHeader
-          title={isFrench ? "Messages" : "Messages"}
-          eyebrow="MARKETPLACE"
+          title={isFrench ? 'Messages' : 'Messages'}
+          eyebrow="COMMUNICATION"
         />
-
-        {/* 4. Integrated Search & Filter Extension (Sub-Header) */}
-        {!isGuest && (
-          <View style={styles.subHeaderSearchSection}>
-            {/* Pill-shaped search input */}
-            <View style={styles.searchBarWrap}>
-              <Ionicons name="search" size={18} color={Palette.secondaryText} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search conversations or artis..."
-                placeholderTextColor={Palette.secondaryText}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCapitalize="none"
-                returnKeyType="search"
-              />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery("")} hitSlop={6}>
-                  <Ionicons
-                    name="close-circle"
-                    size={18}
-                    color={Palette.secondaryText}
-                  />
-                </Pressable>
-              )}
-            </View>
-
-            {/* Filter Action Button */}
-            <Pressable
-              onPress={() => setFilterActive(!filterActive)}
-              style={[
-                styles.filterActionBtn,
-                filterActive && styles.filterActionBtnActive,
-              ]}
-              accessibilityLabel="Filters"
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name="options-outline"
-                size={20}
-                color={filterActive ? Palette.primary : Palette.dark}
-              />
-              {filterActive && <View style={styles.filterActiveDot} />}
-            </Pressable>
-          </View>
-        )}
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {isGuest ? (
-            /* Dedicated Sign-in / Create Account Prompt */
-            <View style={styles.guestCard}>
-              <View style={styles.guestIconCircle}>
-                <Ionicons
-                  name="chatbubbles"
-                  size={40}
-                  color={Palette.primary}
-                />
+            /* Guest Prompt */
+            <View style={styles.cardContainer}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="person-circle-outline" size={48} color={Palette.primary} />
               </View>
 
-              <ThemedText type="headlineMd" style={styles.guestTitle}>
-                {isFrench
-                  ? "Connectez-vous pour échanger"
-                  : "Sign in to use Messaging"}
+              <ThemedText type="headlineMd" style={styles.cardTitle}>
+                {isFrench ? 'Connectez-vous à votre compte' : 'Sign in to ArtisanLink'}
               </ThemedText>
 
-              <ThemedText style={styles.guestSub}>
+              <ThemedText style={styles.cardSubtitle}>
                 {isFrench
-                  ? "Créez un compte gratuit ou connectez-vous pour chatter directement avec vos artisans, envoyer des photos de travaux et recevoir des devis personnalisés."
-                  : "Create a free account or sign in to chat directly with verified local artisans, send repair photos, and receive instant estimates."}
+                  ? 'Connectez-vous pour voir vos demandes de services, suivre les artisans et accéder aux futures fonctionnalités de messagerie.'
+                  : 'Sign in to view your active service requests, track technicians, and access future messaging releases.'}
               </ThemedText>
 
-              {/* Value proposition badges */}
-              <View style={styles.featureList}>
-                <View style={styles.featureRow}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color={Palette.success}
-                  />
-                  <ThemedText style={styles.featureText}>
-                    {isFrench
-                      ? "Discussions directes avec les artisans"
-                      : "Direct 1-on-1 chat with verified artisans"}
-                  </ThemedText>
-                </View>
-
-                <View style={styles.featureRow}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color={Palette.success}
-                  />
-                  <ThemedText style={styles.featureText}>
-                    {isFrench
-                      ? "Partage de photos et diagnostics de panne"
-                      : "Send photos of issues & repair diagnostics"}
-                  </ThemedText>
-                </View>
-
-                <View style={styles.featureRow}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color={Palette.success}
-                  />
-                  <ThemedText style={styles.featureText}>
-                    {isFrench
-                      ? "Mises à jour d’arrivée et devis transparents"
-                      : "Real-time arrival updates & transparent estimates"}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {/* Sign In / Create Account Button */}
               <Pressable
                 onPress={() => openAuthModal()}
-                style={styles.signInPrimaryBtn}
-              >
-                <ThemedText style={styles.signInPrimaryBtnText}>
-                  {isFrench
-                    ? "Se connecter / Créer un compte"
-                    : "Sign In / Create Account"}
+                style={styles.primaryBtn}
+                accessibilityRole="button">
+                <ThemedText style={styles.primaryBtnText}>
+                  {isFrench ? 'Se connecter / S’inscrire' : 'Sign In / Register'}
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
               </Pressable>
             </View>
-          ) : isLoading ? (
-            <View style={{ gap: Spacing.xs, marginTop: Spacing.xs }}>
-              <SkeletonMessageRow />
-              <SkeletonMessageRow />
-              <SkeletonMessageRow />
-              <SkeletonMessageRow />
-            </View>
-          ) : filteredChats.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons
-                name="chatbox-ellipses-outline"
-                size={48}
-                color={Palette.secondaryText}
-              />
-              <ThemedText style={styles.emptyTitle}>
-                {isFrench ? "Aucun message trouvé" : "No messages found"}
-              </ThemedText>
-              <ThemedText style={styles.emptySub}>
-                {isFrench
-                  ? "Essayez de modifier vos critères de recherche ou réinitialisez le filtre."
-                  : "Try changing your search keywords or clear the active filter."}
-              </ThemedText>
-            </View>
           ) : (
-            filteredChats.map((chat) => (
-              <Pressable
-                key={chat.id}
-                onPress={() => openChat(chat.id)}
-                style={styles.chatCard}
-              >
-                <View style={styles.avatarWrap}>
-                  <Image
-                    source={{ uri: chat.professionalAvatar }}
-                    style={styles.avatar}
-                  />
-                  {chat.online && <View style={styles.onlineDot} />}
-                </View>
+            /* Feature Not Yet Available Card */
+            <View style={styles.cardContainer}>
+              <View style={[styles.iconCircle, styles.featureIconCircle]}>
+                <Ionicons name="chatbubbles-outline" size={48} color={Palette.primary} />
+              </View>
 
-                <View style={styles.chatInfo}>
-                  <View style={styles.chatHeaderRow}>
-                    <ThemedText style={styles.proName}>
-                      {chat.professionalName}
-                    </ThemedText>
-                    <ThemedText style={styles.timeText}>
-                      {chat.lastMessageTime}
-                    </ThemedText>
-                  </View>
-                  <ThemedText style={styles.proProfession}>
-                    {chat.professionalProfession}
+              <View style={styles.tagBadge}>
+                <Ionicons name="sparkles" size={14} color={Palette.primary} />
+                <ThemedText style={styles.tagBadgeText}>
+                  {isFrench ? 'Bientôt disponible' : 'Coming Soon'}
+                </ThemedText>
+              </View>
+
+              <ThemedText type="headlineMd" style={styles.cardTitle}>
+                {isFrench
+                  ? 'Fonctionnalité non disponible dans cette version'
+                  : 'Feature not yet available in this app version'}
+              </ThemedText>
+
+              <ThemedText style={styles.cardSubtitle}>
+                {isFrench
+                  ? 'La messagerie instantanée intégrée est en cours de développement et sera disponible dans la prochaine mise à jour de l’application.'
+                  : 'In-app real-time messaging is currently under active development and will be released in an upcoming update.'}
+              </ThemedText>
+
+              <View style={styles.tipBox}>
+                <Ionicons name="call-outline" size={20} color={Palette.primary} style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <ThemedText style={styles.tipTitle}>
+                    {isFrench ? 'Comment contacter votre artisan ?' : 'How to reach your artisan?'}
                   </ThemedText>
-                  <ThemedText style={styles.lastMsgText} numberOfLines={1}>
-                    {chat.lastMessage}
+                  <ThemedText style={styles.tipBody}>
+                    {isFrench
+                      ? 'Vous pouvez directement appeler ou envoyer un SMS à votre artisan assigné en appuyant sur le bouton d’appel dans l’onglet Demandes.'
+                      : 'You can directly call or SMS your assigned artisan using the contact button on confirmed requests in the Requests tab.'}
                   </ThemedText>
                 </View>
+              </View>
 
-                {chat.unreadCount > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <ThemedText style={styles.unreadBadgeText}>
-                      {chat.unreadCount}
-                    </ThemedText>
-                  </View>
-                )}
-              </Pressable>
-            ))
+              {/* Action Buttons */}
+              <View style={styles.actionCol}>
+                <Pressable
+                  onPress={() => router.push('/requests')}
+                  style={styles.primaryBtn}
+                  accessibilityRole="button">
+                  <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
+                  <ThemedText style={styles.primaryBtnText}>
+                    {isFrench ? 'Voir mes demandes' : 'View My Service Requests'}
+                  </ThemedText>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => router.push('/explore')}
+                  style={styles.secondaryBtn}
+                  accessibilityRole="button">
+                  <ThemedText style={styles.secondaryBtnText}>
+                    {isFrench ? 'Explorer les artisans' : 'Explore Artisans'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -279,316 +132,128 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: "center",
-  },
-  // 1. TOP APP BAR / HEADER BAR (h-14 / h-16, docked full-width at top-0, border-b border-outline-variant)
-  topAppBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF", // Crisp, clean surface (bg-white / bg-surface)
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0", // #E2E8F0 divider line
-  },
-  appBarLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  // Marketplace Brand Icon: w-9 h-9 rounded-xl in Deep Navy / Artisan Blue (#12304A / #1769AA) with crossed tools
-  brandIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: Palette.dark, // #12304A
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleHierarchy: {
-    justifyContent: "center",
-  },
-  // Eyebrow Tag: text-xs font-semibold tracking-wider text-slate-500
-  eyebrowTag: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#64748B", // text-slate-500
-    letterSpacing: 1.1,
-  },
-  // Screen Title: text-xl font-bold text-slate-900 / #12304A
-  screenTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#12304A",
-    letterSpacing: -0.4,
-  },
-  appBarRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  actionIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  notifDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Palette.accent,
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-  },
-  // Circular avatar button: w-9 h-9 rounded-full bg-primary / #1769AA text-white
-  avatarShortcutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Palette.primary, // #1769AA
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // 4. INTEGRATED SEARCH & FILTER EXTENSION (SUB-HEADER)
-  subHeaderSearchSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    width: "100%",
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
-  // Full-width pill-shaped search input (bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5)
-  searchBarWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 42,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: Palette.dark,
-    paddingVertical: 0,
-  },
-  // Filter Action Button (Filters)
-  filterActionBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  filterActionBtnActive: {
-    borderColor: Palette.primary,
-    backgroundColor: Palette.surfaceContainerLow,
-  },
-  filterActiveDot: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: Palette.primary,
   },
   scroll: {
     flex: 1,
-    width: "100%",
   },
   scrollContent: {
-    maxWidth: MaxContentWidth,
-    alignSelf: "center",
-    width: "100%",
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: BottomTabInset + Spacing.xl + 20,
-    gap: Spacing.md,
+    paddingTop: Spacing.xl,
+    paddingBottom: BottomTabInset + Spacing.xl,
+    alignItems: 'center',
   },
-  guestCard: {
-    backgroundColor: Palette.surface,
+  cardContainer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Palette.outline,
     padding: Spacing.xl,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Palette.outline,
-    marginTop: Spacing.sm,
-    ...Shadows.card,
+    alignItems: 'center',
+    ...Shadows.subtle,
   },
-  guestIconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: Palette.surfaceContainerLow,
-    alignItems: "center",
-    justifyContent: "center",
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(23, 105, 170, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Palette.outline,
   },
-  guestTitle: {
-    fontSize: 20,
-    fontWeight: "800",
+  featureIconCircle: {
+    backgroundColor: 'rgba(23, 105, 170, 0.1)',
+  },
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(23, 105, 170, 0.12)',
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    marginBottom: Spacing.sm,
+  },
+  tagBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Palette.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardTitle: {
     color: Palette.dark,
-    textAlign: "center",
-    marginBottom: Spacing.xs,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
-  guestSub: {
-    fontSize: 13,
+  cardSubtitle: {
+    fontSize: 14,
     color: Palette.secondaryText,
-    textAlign: "center",
+    textAlign: 'center',
     lineHeight: 20,
-    maxWidth: 320,
     marginBottom: Spacing.lg,
   },
-  featureList: {
-    width: "100%",
-    backgroundColor: Palette.surfaceContainerLow,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+  tipBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    backgroundColor: 'rgba(23, 105, 170, 0.04)',
     borderWidth: 1,
-    borderColor: Palette.outline,
+    borderColor: 'rgba(23, 105, 170, 0.15)',
+    borderRadius: BorderRadius.default,
+    padding: Spacing.md,
+    width: '100%',
+    marginBottom: Spacing.xl,
   },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  tipTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Palette.dark,
+    marginBottom: 2,
+  },
+  tipBody: {
+    fontSize: 12,
+    color: Palette.secondaryText,
+    lineHeight: 16,
+  },
+  actionCol: {
+    width: '100%',
     gap: Spacing.sm,
   },
-  featureText: {
-    fontSize: 13,
-    color: Palette.dark,
-    fontWeight: "600",
-    flex: 1,
-  },
-  signInPrimaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.sm,
     backgroundColor: Palette.primary,
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: BorderRadius.lg,
-    ...Shadows.subtle,
+    height: 48,
+    borderRadius: BorderRadius.default,
+    width: '100%',
+    shadowColor: Palette.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  signInPrimaryBtnText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
+  primaryBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: Spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Palette.dark,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: Palette.secondaryText,
-    textAlign: "center",
-    maxWidth: 300,
-  },
-  chatCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
-    backgroundColor: Palette.surface,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
+  secondaryBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 46,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1.5,
     borderColor: Palette.outline,
-    gap: Spacing.md,
-    ...Shadows.subtle,
+    backgroundColor: Palette.surface,
+    width: '100%',
   },
-  avatarWrap: {
-    position: "relative",
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  onlineDot: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Palette.success,
-    borderWidth: 2,
-    borderColor: Palette.surface,
-  },
-  chatInfo: {
-    flex: 1,
-  },
-  chatHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  proName: {
-    fontSize: 15,
-    fontWeight: "700",
+  secondaryBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: Palette.dark,
-  },
-  timeText: {
-    fontSize: 11,
-    color: Palette.secondaryText,
-  },
-  proProfession: {
-    fontSize: 12,
-    color: Palette.primary,
-    fontWeight: "600",
-    marginTop: 1,
-  },
-  lastMsgText: {
-    fontSize: 13,
-    color: Palette.secondaryText,
-    marginTop: 3,
-  },
-  unreadBadge: {
-    backgroundColor: Palette.accent,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  unreadBadgeText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#FFFFFF",
   },
 });

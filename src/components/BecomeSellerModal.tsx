@@ -15,6 +15,7 @@ import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { ProviderService, ProfessionTaxonomyItem } from '@/services/provider.service';
+import { FriendlyStepper } from './FriendlyStepper';
 
 const ACTIVATION_STEPS = [
   { id: 1, title: 'Profession' },
@@ -232,24 +233,19 @@ export const BecomeSellerModal: React.FC = () => {
             </Pressable>
           </View>
 
-          {/* Stepper Track */}
+          {/* Friendly Stepper */}
           {step < 4 && (
-            <View style={styles.stepperTrack}>
-              {ACTIVATION_STEPS.slice(0, 3).map((s, idx) => {
-                const isDone = idx + 1 < step;
-                const isCurrent = idx + 1 === step;
-                return (
-                  <View
-                    key={s.id}
-                    style={[
-                      styles.stepperSegment,
-                      isDone && styles.stepperSegmentDone,
-                      isCurrent && styles.stepperSegmentCurrent,
-                    ]}
-                  />
-                );
-              })}
-            </View>
+            <FriendlyStepper
+              steps={ACTIVATION_STEPS.slice(0, 3)}
+              currentStep={step}
+              friendlySubtitle={
+                step === 1
+                  ? 'Choose your primary trade 🔨'
+                  : step === 2
+                  ? 'Select your skills & specializations ✨'
+                  : 'Profile photo, experience & location 📍'
+              }
+            />
           )}
 
           {/* Form Content */}

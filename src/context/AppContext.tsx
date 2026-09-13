@@ -255,7 +255,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [submittedRequest, setSubmittedRequest] = useState<ServiceRequest | null>(null);
 
   // 9. Service Requests & Tracking
-  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(INITIAL_REQUESTS);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [requestDetailsVisible, setRequestDetailsVisible] = useState<boolean>(false);
 
@@ -267,7 +267,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [providerActivationVisible, setProviderActivationVisible] = useState<boolean>(false);
 
   // 11. Chats & Messaging
-  const [chats, setChats] = useState<ChatThread[]>(INITIAL_CHATS);
+  const [chats, setChats] = useState<ChatThread[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [chatModalVisible, setChatModalVisible] = useState<boolean>(false);
 
@@ -442,10 +442,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const res = await ProviderService.getProviders();
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const backendPros: Professional[] = res.data.map(mapBackendProviderToProfessional);
-        // Combine backend artisans with mock professionals (deduplicating by ID, putting backend artisans first)
-        const backendIds = new Set(backendPros.map((p) => p.id));
-        const filteredMock = PROFESSIONALS.filter((p) => !backendIds.has(p.id));
-        setProfessionals([...backendPros, ...filteredMock]);
+        setProfessionals(backendPros);
       }
     } catch (e) {
       console.warn('Failed to fetch providers from backend:', e);

@@ -27,6 +27,7 @@ import { useApp } from "@/context/AppContext";
 import { ServiceRequest, PROFESSIONALS } from "@/data/mockData";
 import AppHeader from "@/components/AppHeader";
 import { SkeletonRequestCard } from "@/components/SkeletonLoader";
+import { ReviewModal } from "@/components/ReviewModal";
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -65,6 +66,12 @@ export default function RequestsScreen() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [trackingModalRequest, setTrackingModalRequest] =
     useState<ServiceRequest | null>(null);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [selectedReviewJob, setSelectedReviewJob] = useState<{
+    jobId: string;
+    targetName: string;
+    isProviderReviewingCustomer: boolean;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -765,6 +772,64 @@ export default function RequestsScreen() {
                                   </ThemedText>
                                 </Pressable>
                               )}
+
+                              {req.status === 'Completed' && (
+                                <Pressable
+                                  onPress={() => {
+                                    setSelectedReviewJob({
+                                      jobId: req.id,
+                                      targetName: req.serviceName || 'Client',
+                                      isProviderReviewingCustomer: true,
+                                    });
+                                    setReviewModalVisible(true);
+                                  }}
+                                  style={{
+                                    backgroundColor: Palette.primary,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 7,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}>
+                                  <Ionicons name="star" size={13} color="#FFFFFF" />
+                                  <ThemedText style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                                    {isFrench ? "Évaluer le client" : "Rate Customer"}
+                                  </ThemedText>
+                                </Pressable>
+                              )}
+                            </View>
+                          ) : req.status === 'Completed' ? (
+                            <View style={{ flexDirection: 'row', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
+                              <Pressable
+                                onPress={() => {
+                                  setSelectedReviewJob({
+                                    jobId: req.id,
+                                    targetName: req.professionalName || 'Artisan',
+                                    isProviderReviewingCustomer: false,
+                                  });
+                                  setReviewModalVisible(true);
+                                }}
+                                style={{
+                                  backgroundColor: Palette.gold,
+                                  paddingHorizontal: 13,
+                                  paddingVertical: 7,
+                                  borderRadius: 8,
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                }}>
+                                <Ionicons name="star" size={13} color="#FFFFFF" />
+                                <ThemedText style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                                  {isFrench ? "Laisser un avis" : "Rate Artisan"}
+                                </ThemedText>
+                              </Pressable>
+
+                              <Pressable
+                                onPress={() => openRequestDetails(req)}
+                                style={styles.primaryDetailsBtn}>
+                                <ThemedText style={styles.primaryDetailsText}>Details</ThemedText>
+                              </Pressable>
                             </View>
                           ) : isScheduled ? (
                             <Pressable
@@ -1212,6 +1277,20 @@ export default function RequestsScreen() {
             </Pressable>
           </Pressable>
         </Modal>
+
+        {/* Two-Sided Review & Behavior Feedback Modal */}
+        {selectedReviewJob && (
+          <ReviewModal
+            visible={reviewModalVisible}
+            onClose={() => {
+              setReviewModalVisible(false);
+              setSelectedReviewJob(null);
+            }}
+            jobId={selectedReviewJob.jobId}
+            targetName={selectedReviewJob.targetName}
+            isProviderReviewingCustomer={selectedReviewJob.isProviderReviewingCustomer}
+          />
+        )}
       </SafeAreaView>
     </ThemedView>
   );

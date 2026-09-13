@@ -23,6 +23,8 @@ export const AuthModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -290,11 +292,21 @@ export const AuthModal: React.FC = () => {
                         setFieldErrors((prev) => ({ ...prev, password: '' }));
                       }
                     }}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                     placeholder="At least 6 characters"
                     placeholderTextColor={Palette.secondaryText}
                     editable={!loading}
                   />
+                  <Pressable
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={10}
+                    style={styles.eyeToggleBtn}>
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={Palette.secondaryText}
+                    />
+                  </Pressable>
                 </View>
                 {fieldErrors.password ? (
                   <View style={styles.fieldErrorRow}>
@@ -323,11 +335,21 @@ export const AuthModal: React.FC = () => {
                           setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
                         }
                       }}
-                      secureTextEntry
+                      secureTextEntry={!showConfirmPassword}
                       placeholder="Re-enter your password"
                       placeholderTextColor={Palette.secondaryText}
                       editable={!loading}
                     />
+                    <Pressable
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      hitSlop={10}
+                      style={styles.eyeToggleBtn}>
+                      <Ionicons
+                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color={Palette.secondaryText}
+                      />
+                    </Pressable>
                   </View>
                   {fieldErrors.confirmPassword ? (
                     <View style={styles.fieldErrorRow}>
@@ -506,6 +528,11 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: 14,
     color: Palette.mainText,
+  },
+  eyeToggleBtn: {
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fieldErrorRow: {
     flexDirection: 'row',

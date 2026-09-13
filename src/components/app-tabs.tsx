@@ -9,31 +9,30 @@ import { useApp } from '@/context/AppContext';
 export default function AppTabs() {
   const router = useRouter();
   const pathname = usePathname();
-  const { authStatus, user, activeRole, serviceRequests, chats } = useApp();
+  const { authStatus, user, activeRole, serviceRequests, providerRequests } = useApp();
 
   const isGuest = authStatus === 'guest';
   const isProviderRole = user.isProvider && activeRole === 'provider';
 
-  const activeRequestsCount = serviceRequests.filter(
+  const relevantRequests = isProviderRole && providerRequests.length > 0 ? providerRequests : serviceRequests;
+  const activeRequestsCount = relevantRequests.filter(
     (r) => r.status === 'Sent' || r.status === 'Accepted' || r.status === 'In Progress'
   ).length;
-
-  const unreadChatsCount = chats.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
   // Dynamic tab definitions based on role
   const tabs = isProviderRole
     ? [
         { name: 'Dashboard', route: '/', icon: 'grid-outline', iconActive: 'grid' },
-        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount || undefined },
+        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount > 0 ? activeRequestsCount : undefined },
         { name: 'Services', route: '/services', icon: 'construct-outline', iconActive: 'construct' },
-        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', badge: unreadChatsCount || undefined },
+        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
         { name: 'Profile', route: '/profile', icon: 'person-outline', iconActive: 'person' },
       ]
     : [
         { name: 'Home', route: '/', icon: 'home-outline', iconActive: 'home' },
         { name: 'Services', route: '/services', icon: 'construct-outline', iconActive: 'construct' },
-        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: activeRequestsCount || undefined },
-        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles', badge: (!isGuest && unreadChatsCount) ? unreadChatsCount : undefined },
+        { name: 'Requests', route: '/requests', icon: 'clipboard-outline', iconActive: 'clipboard', badge: (!isGuest && activeRequestsCount > 0) ? activeRequestsCount : undefined },
+        { name: 'Messages', route: '/messages', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
         { name: 'Profile', route: '/profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
       ];
 

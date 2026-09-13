@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -15,17 +15,18 @@ import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, ServiceCategory, Professional } from '@/data/mockData';
+import { FriendlyStepper, StepItem } from './FriendlyStepper';
+import { API_BASE_URL } from '@/constants/api';
 
-const STEPS = [
-  { id: 1, title: 'Service' },
+const STEPS: StepItem[] = [
+  { id: 1, title: 'Category' },
   { id: 2, title: 'Problem' },
-  { id: 3, title: 'Location' },
-  { id: 4, title: 'Schedule' },
-  { id: 5, title: 'Professional' },
-  { id: 6, title: 'Review' },
+  { id: 3, title: 'Location & Time' },
+  { id: 4, title: 'Select Pro' },
 ];
 
-const SAMPLE_PHOTO = 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80';
+const SAMPLE_PHOTO =
+  'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&auto=format&fit=crop&q=80';
 
 export const BookingModal: React.FC = () => {
   const {
@@ -43,24 +44,49 @@ export const BookingModal: React.FC = () => {
 
   const [step, setStep] = useState(1);
 
-  // Step 1: Service
+  // Step 1: Category & Service
   const [selectedService, setSelectedService] = useState<ServiceCategory>(POPULAR_SERVICES[0]);
 
-  // Step 2: Problem
+  // Step 2: Problem Details & Photos
   const [problemDescription, setProblemDescription] = useState('');
+  const [urgency, setUrgency] = useState<'Standard' | 'Urgent' | 'Emergency'>('Standard');
   const [photos, setPhotos] = useState<string[]>([]);
 
-  // Step 3: Location
-  const [location, setLocation] = useState('142 Elm Street, Apt 4B, Downtown');
+  // Step 3: Location (Geoapify) & Schedule
+  const [location, setLocation] = useState('Bastos, Yaoundé, Cameroon');
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [isGeocodingCurrent, setIsGeocodingCurrent] = useState(false);
 
-  // Step 4: Schedule
   const [date, setDate] = useState('Today, 26 Aug');
   const [time, setTime] = useState('14:00 - 16:00');
   const [isFlexible, setIsFlexible] = useState(false);
 
-  // Step 5: Professional
+  // Step 4: Choose Professional & Confirm
   const proList = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
-  const [selectedPro, setSelectedPro] = useState<Professional>(proList[0]);
+
+  // Filter professionals strictly matching the chosen profession/category
+  const filteredProfessionals = useMemo(() => {
+    const sName = (selectedService.name || '').toLowerCase();
+    const sId = (selectedService.id || '').toLowerCase();
+
+    const matches = proList.filter((pro) => {
+      const pCat = (pro.category || '').toLowerCase();
+      const pProf = (pro.profession || '').toLowerCase();
+      return (
+        pCat.includes(sId) ||
+        pProf.includes(sId) ||
+        pCat.includes(sName) ||
+        pProf.includes(sName) ||
+        sName.includes(pCat) ||
+        sName.includes(pProf)
+      );
+    });
+
+    return matches.length > 0 ? matches : proList;
+  }, [proList, selectedService]);
+
+  const [selectedPro, setSelectedPro] = useState<Professional>(filteredProfessionals[0] || proList[0]);
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -75,22 +101,73 @@ export const BookingModal: React.FC = () => {
       }
       if (preselectedPro) {
         setSelectedPro(preselectedPro);
-      } else {
-        const matching = proList.find(
-          (p) => p.category.toLowerCase() === (preselectedService?.id || 'plumbing').toLowerCase()
-        );
-        if (matching) setSelectedPro(matching);
+      } else if (filteredProfessionals.length > 0) {
+        setSelectedPro(filteredProfessionals[0]);
       }
     }
-  }, [createRequestVisible, preselectedService, preselectedPro, proList]);
+  }, [createRequestVisible, preselectedService, preselectedPro]);
+
+  // Update selectedPro when filtered list changes if current selection is not in list
+  useEffect(() => {
+    if (filteredProfessionals.length > 0 && !filteredProfessionals.some((p) => p.id === selectedPro?.id)) {
+      setSelectedPro(filteredProfessionals[0]);
+    }
+  }, [filteredProfessionals]);
 
   if (!createRequestVisible) return null;
 
+  // Geoapify autocomplete search
+  const handleLocationChange = async (text: string) => {
+    setLocation(text);
+    if (!text || text.trim().length < 2) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    setIsSearchingLocation(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/location/autocomplete?text=${encodeURIComponent(text.trim())}&country=cm&limit=4`
+      );
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setLocationSuggestions(data.data);
+      } else {
+        setLocationSuggestions([]);
+      }
+    } catch {
+      setLocationSuggestions([]);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  // Reverse geocoding via Geoapify API
+  const handleUseMyLocation = async () => {
+    setIsGeocodingCurrent(true);
+    try {
+      // Default to Yaounde Bastos coordinates
+      const lat = 3.894;
+      const lon = 11.510;
+      const res = await fetch(`${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      if (data.success && data.data?.formatted) {
+        setLocation(data.data.formatted);
+        setLocationSuggestions([]);
+      } else {
+        setLocation('Bastos, Yaoundé, Cameroon');
+      }
+    } catch {
+      setLocation('Bastos, Yaoundé, Cameroon');
+    } finally {
+      setIsGeocodingCurrent(false);
+    }
+  };
+
   const handleNext = () => {
-    if (step < 6) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
-      // Step 6: Review -> Submit
       handleSubmitRequest();
     }
   };
@@ -103,7 +180,6 @@ export const BookingModal: React.FC = () => {
 
   const handleSubmitRequest = () => {
     if (authStatus === 'guest') {
-      // Prompt auth first, keeping request state intact
       openAuthModal(() => {
         executeFinalSubmit();
       });
@@ -119,14 +195,14 @@ export const BookingModal: React.FC = () => {
       const createdReq = await submitServiceRequest({
         serviceCategory: selectedService.name,
         serviceName: `${selectedService.name} Diagnostic & Repair`,
-        problemDescription: problemDescription || `Request for ${selectedService.name} service.`,
+        problemDescription: problemDescription || `Request for ${selectedService.name} (${urgency} priority).`,
         photos,
         location,
         date,
         time,
         isFlexible,
         professional: selectedPro,
-        estimatedCost: selectedPro.hourlyRate * 1.5,
+        estimatedCost: selectedPro ? selectedPro.hourlyRate * 1.5 : 15000,
       });
 
       closeCreateRequest();
@@ -154,7 +230,7 @@ export const BookingModal: React.FC = () => {
       if (!result.canceled && result.assets && result.assets[0]?.uri) {
         setPhotos((prev) => (prev.length < 3 ? [...prev, result.assets[0].uri] : prev));
       }
-    } catch (e) {
+    } catch {
       setPhotos((prev) => (prev.length < 3 ? [...prev, SAMPLE_PHOTO] : prev));
     }
   };
@@ -167,7 +243,7 @@ export const BookingModal: React.FC = () => {
     <Modal visible={createRequestVisible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          {/* Top Header */}
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               {step > 1 && (
@@ -178,7 +254,7 @@ export const BookingModal: React.FC = () => {
               <View>
                 <ThemedText style={styles.headerTitle}>Create Service Request</ThemedText>
                 <ThemedText style={styles.headerSub}>
-                  Step {step} of 6 • {STEPS[step - 1].title}
+                  Step {step} of 4 • {STEPS[step - 1].title}
                 </ThemedText>
               </View>
             </View>
@@ -188,27 +264,24 @@ export const BookingModal: React.FC = () => {
             </Pressable>
           </View>
 
-          {/* Stepper Progress Line */}
-          <View style={styles.stepperTrack}>
-            {STEPS.map((s, idx) => {
-              const isDone = idx + 1 < step;
-              const isCurrent = idx + 1 === step;
-              return (
-                <View
-                  key={s.id}
-                  style={[
-                    styles.stepperSegment,
-                    isDone && styles.stepperSegmentDone,
-                    isCurrent && styles.stepperSegmentCurrent,
-                  ]}
-                />
-              );
-            })}
-          </View>
+          {/* Friendly Stepper */}
+          <FriendlyStepper
+            steps={STEPS}
+            currentStep={step}
+            friendlySubtitle={
+              step === 1
+                ? 'Step 1 of 4 • Choose your trade category 🛠️'
+                : step === 2
+                ? 'Step 2 of 4 • Describe the problem & attach photos 📸'
+                : step === 3
+                ? 'Step 3 of 4 • Address (Geoapify) & timing 📍'
+                : `Step 4 of 4 • Pick a verified ${selectedService.name} & confirm 🤝`
+            }
+          />
 
-          {/* Form Content */}
+          {/* Scrollable Form Content */}
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {/* STEP 1: SERVICE SELECTION */}
+            {/* SCREEN 1: CATEGORY & PROFESSION */}
             {step === 1 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
@@ -226,10 +299,6 @@ export const BookingModal: React.FC = () => {
                         key={srv.id}
                         onPress={() => {
                           setSelectedService(srv);
-                          const matching = proList.find(
-                            (p) => p.category.toLowerCase() === srv.id.toLowerCase()
-                          );
-                          if (matching) setSelectedPro(matching);
                         }}
                         style={[
                           styles.serviceCardItem,
@@ -262,28 +331,72 @@ export const BookingModal: React.FC = () => {
               </View>
             )}
 
-            {/* STEP 2: PROBLEM DESCRIPTION */}
+            {/* SCREEN 2: PROBLEM DETAILS & PHOTOS */}
             {step === 2 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  Tell us about your problem
+                  Tell us about your issue
                 </ThemedText>
                 <ThemedText style={styles.stepSubtitle}>
-                  Describe the issue clearly to receive accurate estimates.
+                  Describe the problem clearly so the artisan comes prepared with the right tools.
                 </ThemedText>
 
+                <ThemedText style={styles.fieldLabel}>Problem Description *</ThemedText>
                 <TextInput
                   style={styles.textArea}
-                  placeholder="Describe your problem or project..."
+                  placeholder="e.g. The kitchen sink pipe has a severe leakage since yesterday morning..."
                   placeholderTextColor={Palette.secondaryText}
                   multiline
-                  numberOfLines={5}
+                  numberOfLines={4}
                   value={problemDescription}
                   onChangeText={setProblemDescription}
                 />
 
+                {/* Urgency Selector */}
+                <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.md }]}>
+                  Urgency Level
+                </ThemedText>
+                <View style={styles.urgencyRow}>
+                  {(['Standard', 'Urgent', 'Emergency'] as const).map((lvl) => (
+                    <Pressable
+                      key={lvl}
+                      onPress={() => setUrgency(lvl)}
+                      style={[
+                        styles.urgencyChip,
+                        urgency === lvl && styles.urgencyChipSelected,
+                        urgency === lvl && lvl === 'Emergency' && styles.urgencyChipEmergency,
+                      ]}>
+                      <Ionicons
+                        name={
+                          lvl === 'Emergency'
+                            ? 'flash'
+                            : lvl === 'Urgent'
+                            ? 'alarm-outline'
+                            : 'checkmark-circle-outline'
+                        }
+                        size={15}
+                        color={
+                          urgency === lvl
+                            ? '#FFFFFF'
+                            : lvl === 'Emergency'
+                            ? Palette.errorRed
+                            : Palette.dark
+                        }
+                      />
+                      <ThemedText
+                        style={[
+                          styles.urgencyChipText,
+                          urgency === lvl && styles.urgencyChipTextSelected,
+                        ]}>
+                        {lvl}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {/* Photos */}
                 <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.lg }]}>
-                  Optional: Add Photos
+                  Attach Photos (Up to 3)
                 </ThemedText>
                 <View style={styles.photosRow}>
                   {photos.map((uri, idx) => (
@@ -300,54 +413,80 @@ export const BookingModal: React.FC = () => {
                   {photos.length < 3 && (
                     <Pressable onPress={handleAddPhoto} style={styles.addPhotoCard}>
                       <Ionicons name="camera-outline" size={24} color={Palette.primary} />
-                      <ThemedText style={styles.addPhotoLabel}>Add Photos</ThemedText>
+                      <ThemedText style={styles.addPhotoLabel}>Add Photo</ThemedText>
                     </Pressable>
                   )}
                 </View>
               </View>
             )}
 
-            {/* STEP 3: LOCATION */}
+            {/* SCREEN 3: LOCATION & SCHEDULE */}
             {step === 3 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  Where do you need the service?
+                  Location & Schedule
                 </ThemedText>
                 <ThemedText style={styles.stepSubtitle}>
-                  Enter the address where the professional should arrive.
+                  Where and when should the service provider arrive?
                 </ThemedText>
 
+                {/* Location Input with Geoapify */}
+                <ThemedText style={styles.fieldLabel}>Service Address (Geoapify Search) *</ThemedText>
                 <View style={styles.inputWrapWithIcon}>
-                  <Ionicons name="location-outline" size={20} color={Palette.primary} />
+                  <Ionicons name="location" size={20} color={Palette.primary} />
                   <TextInput
                     style={styles.textInputFlex}
                     value={location}
-                    onChangeText={setLocation}
-                    placeholder="Enter your location"
+                    onChangeText={handleLocationChange}
+                    placeholder="Enter city, neighborhood or street..."
                     placeholderTextColor={Palette.secondaryText}
                   />
+                  {isSearchingLocation && (
+                    <ActivityIndicator size="small" color={Palette.primary} />
+                  )}
                 </View>
 
+                {/* Geoapify Suggestions Dropdown */}
+                {locationSuggestions.length > 0 && (
+                  <View style={styles.suggestionsBox}>
+                    {locationSuggestions.map((sug, idx) => (
+                      <Pressable
+                        key={idx}
+                        onPress={() => {
+                          setLocation(sug.formatted);
+                          setLocationSuggestions([]);
+                        }}
+                        style={styles.suggestionItem}>
+                        <Ionicons name="pin-outline" size={16} color={Palette.primary} />
+                        <ThemedText style={styles.suggestionText} numberOfLines={1}>
+                          {sug.formatted}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                {/* Use My GPS Location Button */}
                 <Pressable
-                  onPress={() => setLocation('142 Elm Street, Apt 4B, Downtown')}
+                  onPress={handleUseMyLocation}
+                  disabled={isGeocodingCurrent}
                   style={styles.useMyLocationBtn}>
-                  <Ionicons name="navigate-outline" size={18} color={Palette.primary} />
-                  <ThemedText style={styles.useMyLocationText}>Use My Location</ThemedText>
+                  {isGeocodingCurrent ? (
+                    <ActivityIndicator size="small" color={Palette.primary} />
+                  ) : (
+                    <>
+                      <Ionicons name="navigate-outline" size={18} color={Palette.primary} />
+                      <ThemedText style={styles.useMyLocationText}>
+                        Use My Current Location (GPS Pin)
+                      </ThemedText>
+                    </>
+                  )}
                 </Pressable>
-              </View>
-            )}
 
-            {/* STEP 4: SCHEDULE */}
-            {step === 4 && (
-              <View style={styles.stepContent}>
-                <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  When do you need the service?
+                {/* Date Selection */}
+                <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.lg }]}>
+                  Preferred Date
                 </ThemedText>
-                <ThemedText style={styles.stepSubtitle}>
-                  Select your preferred date and arrival window.
-                </ThemedText>
-
-                <ThemedText style={styles.fieldLabel}>Date</ThemedText>
                 <View style={styles.dateSelectorRow}>
                   {['Today, 26 Aug', 'Tomorrow, 27 Aug', 'Thu, 28 Aug'].map((d) => (
                     <Pressable
@@ -365,7 +504,10 @@ export const BookingModal: React.FC = () => {
                   ))}
                 </View>
 
-                <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Time</ThemedText>
+                {/* Time Selection */}
+                <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.md }]}>
+                  Arrival Window
+                </ThemedText>
                 <View style={styles.timeSelectorRow}>
                   {['08:00 - 12:00', '14:00 - 16:00', '16:00 - 19:00'].map((t) => (
                     <Pressable
@@ -383,6 +525,7 @@ export const BookingModal: React.FC = () => {
                   ))}
                 </View>
 
+                {/* Flexible Scheduling Option */}
                 <Pressable
                   onPress={() => setIsFlexible(!isFlexible)}
                   style={[styles.flexibleOption, isFlexible && styles.flexibleOptionSelected]}>
@@ -391,27 +534,38 @@ export const BookingModal: React.FC = () => {
                     size={20}
                     color={isFlexible ? Palette.primary : Palette.secondaryText}
                   />
-                  <ThemedText style={styles.flexibleText}>I'm flexible with scheduling</ThemedText>
+                  <ThemedText style={styles.flexibleText}>
+                    I'm flexible with date & time if artisan is busy
+                  </ThemedText>
                 </Pressable>
               </View>
             )}
 
-            {/* STEP 5: CHOOSE PROFESSIONAL */}
-            {step === 5 && (
+            {/* SCREEN 4: CHOOSE PROFESSIONAL (FILTERED) & CONFIRM */}
+            {step === 4 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  Choose a professional
+                  Select Verified {selectedService.name}
                 </ThemedText>
                 <ThemedText style={styles.stepSubtitle}>
-                  Recommended providers based on service, rating & verification.
+                  Only licensed artisans specializing in {selectedService.name} are shown below.
                 </ThemedText>
 
+                {submitError && (
+                  <View style={styles.submitErrorBanner}>
+                    <Ionicons name="alert-circle" size={18} color={Palette.errorRed} />
+                    <ThemedText style={styles.submitErrorText}>{submitError}</ThemedText>
+                  </View>
+                )}
+
+                {/* Filtered Provider Cards */}
                 <View style={styles.proList}>
-                  {proList.map((pro) => {
-                    const isSelected = pro.id === selectedPro.id;
+                  {filteredProfessionals.map((pro) => {
+                    const isSelected = pro.id === selectedPro?.id;
                     return (
-                      <View
+                      <Pressable
                         key={pro.id}
+                        onPress={() => setSelectedPro(pro)}
                         style={[
                           styles.proPickCard,
                           isSelected && styles.proPickCardSelected,
@@ -436,8 +590,15 @@ export const BookingModal: React.FC = () => {
                                 {pro.rating} ({pro.reviewCount} reviews)
                               </ThemedText>
                               <ThemedText style={styles.metaDot}>•</ThemedText>
-                              <ThemedText style={styles.proDistance}>{pro.distance}</ThemedText>
+                              <ThemedText style={styles.proDistance}>{pro.distance || 'Near you'}</ThemedText>
                             </View>
+                          </View>
+                          <View style={styles.radioIndicator}>
+                            <Ionicons
+                              name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                              size={22}
+                              color={isSelected ? Palette.primary : Palette.secondaryText}
+                            />
                           </View>
                         </View>
 
@@ -445,85 +606,66 @@ export const BookingModal: React.FC = () => {
                           <Pressable
                             onPress={() => openProfessionalProfile(pro)}
                             style={styles.viewProProfileBtn}>
-                            <ThemedText style={styles.viewProProfileText}>View Profile</ThemedText>
+                            <ThemedText style={styles.viewProProfileText}>View Credentials</ThemedText>
                           </Pressable>
 
-                          <Pressable
-                            onPress={() => setSelectedPro(pro)}
-                            style={[
-                              styles.selectProBtn,
-                              isSelected && styles.selectProBtnSelected,
-                            ]}>
-                            <ThemedText
-                              style={[
-                                styles.selectProBtnText,
-                                isSelected && styles.selectProBtnTextSelected,
-                              ]}>
-                              {isSelected ? 'Selected ✓' : 'Select'}
+                          <View style={styles.rateBadge}>
+                            <ThemedText style={styles.rateBadgeText}>
+                              {pro.hourlyRate ? `${pro.hourlyRate.toLocaleString()} XAF/hr` : 'Fair Rate'}
                             </ThemedText>
-                          </Pressable>
+                          </View>
                         </View>
-                      </View>
+                      </Pressable>
                     );
                   })}
                 </View>
-              </View>
-            )}
 
-            {/* STEP 6: REVIEW */}
-            {step === 6 && (
-              <View style={styles.stepContent}>
-                <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  Review your request
-                </ThemedText>
-                <ThemedText style={styles.stepSubtitle}>
-                  Please confirm your service details before submitting.
-                </ThemedText>
-
-                {submitError && (
-                  <View style={styles.submitErrorBanner}>
-                    <Ionicons name="alert-circle" size={18} color={Palette.errorRed} />
-                    <ThemedText style={styles.submitErrorText}>{submitError}</ThemedText>
-                  </View>
-                )}
-
+                {/* Final Order Review Summary Card */}
                 <View style={styles.reviewSummaryCard}>
+                  <ThemedText style={styles.summaryCardTitle}>Booking Summary</ThemedText>
+
                   <View style={styles.reviewRow}>
-                    <ThemedText style={styles.reviewLabel}>Service</ThemedText>
+                    <ThemedText style={styles.reviewLabel}>Category</ThemedText>
                     <ThemedText style={styles.reviewValue}>{selectedService.name}</ThemedText>
                   </View>
 
                   <View style={styles.reviewDivider} />
 
                   <View style={styles.reviewRow}>
-                    <ThemedText style={styles.reviewLabel}>Problem</ThemedText>
-                    <ThemedText style={styles.reviewValue} numberOfLines={2}>
-                      {problemDescription || 'Standard Diagnostic & Inspection'}
+                    <ThemedText style={styles.reviewLabel}>Location</ThemedText>
+                    <ThemedText style={styles.reviewValue} numberOfLines={1}>
+                      {location}
                     </ThemedText>
                   </View>
 
                   <View style={styles.reviewDivider} />
 
                   <View style={styles.reviewRow}>
-                    <ThemedText style={styles.reviewLabel}>Location</ThemedText>
-                    <ThemedText style={styles.reviewValue} numberOfLines={1}>{location}</ThemedText>
+                    <ThemedText style={styles.reviewLabel}>Schedule</ThemedText>
+                    <ThemedText style={styles.reviewValue}>
+                      {date} • {time}
+                    </ThemedText>
                   </View>
 
                   <View style={styles.reviewDivider} />
 
                   <View style={styles.reviewRow}>
-                    <ThemedText style={styles.reviewLabel}>Date & Time</ThemedText>
-                    <ThemedText style={styles.reviewValue}>{date} ({time})</ThemedText>
-                  </View>
-
-                  <View style={styles.reviewDivider} />
-
-                  <View style={styles.reviewRow}>
-                    <ThemedText style={styles.reviewLabel}>Professional</ThemedText>
+                    <ThemedText style={styles.reviewLabel}>Selected Pro</ThemedText>
                     <View style={styles.proReviewTag}>
-                      <ThemedText style={styles.reviewValue}>{selectedPro.name}</ThemedText>
+                      <ThemedText style={styles.reviewValue}>{selectedPro?.name || 'Top Artisan'}</ThemedText>
                       <Ionicons name="checkmark-circle" size={14} color={Palette.success} />
                     </View>
+                  </View>
+
+                  <View style={styles.reviewDivider} />
+
+                  <View style={styles.reviewRow}>
+                    <ThemedText style={[styles.reviewLabel, { fontWeight: '700' }]}>
+                      Estimated Cost
+                    </ThemedText>
+                    <ThemedText style={[styles.reviewValue, { color: Palette.primary, fontWeight: '800' }]}>
+                      {selectedPro ? `${(selectedPro.hourlyRate * 1.5).toLocaleString()} XAF` : '15,000 XAF'}
+                    </ThemedText>
                   </View>
                 </View>
 
@@ -531,14 +673,14 @@ export const BookingModal: React.FC = () => {
                 <View style={styles.guaranteeBox}>
                   <Ionicons name="shield-checkmark" size={18} color={Palette.success} />
                   <ThemedText style={styles.guaranteeText}>
-                    Backed by ArtisanLink 100% Satisfaction Guarantee.
+                    Backed by ArtisanLink 100% Satisfaction Guarantee. Payment only after job approval.
                   </ThemedText>
                 </View>
               </View>
             )}
           </ScrollView>
 
-          {/* Footer Action Button */}
+          {/* Footer Navigation */}
           <View style={styles.footer}>
             <Pressable
               onPress={handleNext}
@@ -549,7 +691,7 @@ export const BookingModal: React.FC = () => {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={styles.primaryActionBtnText}>
-                  {step === 6 ? 'Submit Request' : 'Continue →'}
+                  {step === 4 ? 'Confirm & Submit Request ✓' : 'Continue →'}
                 </ThemedText>
               )}
             </Pressable>
@@ -570,7 +712,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.background,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    maxHeight: '92%',
+    maxHeight: '94%',
     minHeight: '75%',
     flex: 1,
   },
@@ -607,38 +749,31 @@ const styles = StyleSheet.create({
   headerSub: {
     fontSize: 12,
     color: Palette.secondaryText,
-  },
-  stepperTrack: {
-    flexDirection: 'row',
-    height: 4,
-    backgroundColor: Palette.outline,
-  },
-  stepperSegment: {
-    flex: 1,
-    height: '100%',
-    backgroundColor: Palette.outline,
-  },
-  stepperSegmentDone: {
-    backgroundColor: Palette.primary,
-  },
-  stepperSegmentCurrent: {
-    backgroundColor: Palette.accent,
+    marginTop: 1,
   },
   body: {
     flex: 1,
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
   stepContent: {
     paddingBottom: Spacing.xl,
   },
   stepTitle: {
     color: Palette.dark,
+    marginBottom: 4,
   },
   stepSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: Palette.secondaryText,
-    marginTop: 4,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
+    lineHeight: 18,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Palette.dark,
+    marginBottom: 6,
   },
   servicesGrid: {
     gap: Spacing.sm,
@@ -646,8 +781,8 @@ const styles = StyleSheet.create({
   serviceCardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.sm,
     backgroundColor: Palette.surface,
+    padding: Spacing.sm + 2,
     borderRadius: BorderRadius.default,
     borderWidth: 1.5,
     borderColor: Palette.outline,
@@ -655,11 +790,11 @@ const styles = StyleSheet.create({
   },
   serviceCardItemSelected: {
     borderColor: Palette.primary,
-    backgroundColor: Palette.surfaceContainerLow,
+    backgroundColor: 'rgba(23, 105, 170, 0.05)',
   },
   serviceItemImg: {
-    width: 50,
-    height: 50,
+    width: 48,
+    height: 48,
     borderRadius: BorderRadius.sm,
   },
   serviceItemInfo: {
@@ -680,29 +815,56 @@ const styles = StyleSheet.create({
   },
   textArea: {
     backgroundColor: Palette.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Palette.outline,
     borderRadius: BorderRadius.default,
     padding: Spacing.md,
     fontSize: 14,
     color: Palette.mainText,
+    minHeight: 100,
     textAlignVertical: 'top',
-    minHeight: 110,
   },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '700',
+  urgencyRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  urgencyChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.default,
+    borderWidth: 1.5,
+    borderColor: Palette.outline,
+    backgroundColor: Palette.surface,
+  },
+  urgencyChipSelected: {
+    backgroundColor: Palette.primary,
+    borderColor: Palette.primary,
+  },
+  urgencyChipEmergency: {
+    backgroundColor: Palette.errorRed,
+    borderColor: Palette.errorRed,
+  },
+  urgencyChipText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: Palette.dark,
-    marginBottom: Spacing.xs,
+  },
+  urgencyChipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   photosRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
     marginTop: Spacing.xs,
   },
   photoThumbWrap: {
-    width: 74,
-    height: 74,
+    width: 80,
+    height: 80,
     borderRadius: BorderRadius.default,
     overflow: 'hidden',
     position: 'relative',
@@ -715,98 +877,121 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
     backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addPhotoCard: {
-    width: 74,
-    height: 74,
+    width: 80,
+    height: 80,
     borderRadius: BorderRadius.default,
     borderWidth: 1.5,
-    borderColor: Palette.primary,
+    borderColor: Palette.outline,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Palette.surfaceContainerLow,
-    gap: 2,
+    backgroundColor: Palette.surface,
   },
   addPhotoLabel: {
     fontSize: 10,
-    fontWeight: '700',
     color: Palette.primary,
+    fontWeight: '600',
+    marginTop: 2,
   },
   inputWrapWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
     backgroundColor: Palette.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Palette.outline,
     borderRadius: BorderRadius.default,
     paddingHorizontal: Spacing.md,
     height: 48,
+    gap: Spacing.sm,
   },
   textInputFlex: {
     flex: 1,
+    height: '100%',
     fontSize: 14,
     color: Palette.mainText,
+  },
+  suggestionsBox: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    borderRadius: BorderRadius.default,
+    marginTop: 4,
+    overflow: 'hidden',
+    ...Shadows.subtle,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.sm + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  suggestionText: {
+    fontSize: 13,
+    color: Palette.dark,
+    flex: 1,
   },
   useMyLocationBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginTop: Spacing.sm,
     alignSelf: 'flex-start',
-    marginTop: Spacing.md,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: Palette.surfaceContainerLow,
-    borderRadius: BorderRadius.full,
+    paddingVertical: 4,
   },
   useMyLocationText: {
     fontSize: 13,
-    fontWeight: '600',
     color: Palette.primary,
+    fontWeight: '600',
   },
   dateSelectorRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    flexWrap: 'wrap',
   },
   timeSelectorRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    flexWrap: 'wrap',
   },
   choiceChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: BorderRadius.default,
-    borderWidth: 1,
-    borderColor: Palette.outline,
     backgroundColor: Palette.surface,
+    borderWidth: 1.5,
+    borderColor: Palette.outline,
   },
   choiceChipSelected: {
-    borderColor: Palette.primary,
     backgroundColor: Palette.primary,
+    borderColor: Palette.primary,
   },
   choiceChipText: {
-    fontSize: 13,
-    color: Palette.dark,
+    fontSize: 12,
     fontWeight: '600',
+    color: Palette.dark,
+    textAlign: 'center',
   },
   choiceChipTextSelected: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   flexibleOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
     backgroundColor: Palette.surface,
     borderRadius: BorderRadius.default,
     borderWidth: 1,
@@ -814,15 +999,15 @@ const styles = StyleSheet.create({
   },
   flexibleOptionSelected: {
     borderColor: Palette.primary,
-    backgroundColor: Palette.surfaceContainerLow,
+    backgroundColor: 'rgba(23, 105, 170, 0.05)',
   },
   flexibleText: {
-    fontSize: 14,
+    fontSize: 13,
     color: Palette.dark,
-    fontWeight: '500',
   },
   proList: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   proPickCard: {
     backgroundColor: Palette.surface,
@@ -830,20 +1015,20 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Palette.outline,
     padding: Spacing.md,
-    gap: Spacing.sm,
   },
   proPickCardSelected: {
     borderColor: Palette.primary,
-    backgroundColor: Palette.surfaceContainerLow,
+    backgroundColor: 'rgba(23, 105, 170, 0.04)',
   },
   proPickTop: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    alignItems: 'center',
   },
   proAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
+    marginRight: Spacing.md,
   },
   proPickInfo: {
     flex: 1,
@@ -860,18 +1045,20 @@ const styles = StyleSheet.create({
   },
   proProfession: {
     fontSize: 12,
-    color: Palette.secondaryText,
+    color: Palette.primary,
+    fontWeight: '600',
+    marginTop: 1,
   },
   proMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    marginTop: 3,
   },
   proRating: {
     fontSize: 12,
-    fontWeight: '600',
     color: Palette.dark,
+    fontWeight: '600',
   },
   metaDot: {
     fontSize: 12,
@@ -881,117 +1068,98 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Palette.secondaryText,
   },
+  radioIndicator: {
+    marginLeft: Spacing.sm,
+  },
   proPickActions: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: 4,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   viewProProfileBtn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: BorderRadius.default,
-    borderWidth: 1,
-    borderColor: Palette.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 4,
   },
   viewProProfileText: {
     fontSize: 12,
+    color: Palette.primary,
     fontWeight: '600',
-    color: Palette.dark,
   },
-  selectProBtn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: BorderRadius.default,
-    backgroundColor: Palette.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
+  rateBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.sm,
   },
-  selectProBtnSelected: {
-    backgroundColor: Palette.primary,
-  },
-  selectProBtnText: {
+  rateBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Palette.primary,
-  },
-  selectProBtnTextSelected: {
-    color: '#FFFFFF',
+    color: Palette.dark,
   },
   reviewSummaryCard: {
-    backgroundColor: Palette.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.default,
     borderWidth: 1,
     borderColor: Palette.outline,
     padding: Spacing.md,
-    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    ...Shadows.subtle,
+  },
+  summaryCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Palette.dark,
+    marginBottom: Spacing.sm,
   },
   reviewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   reviewLabel: {
     fontSize: 13,
     color: Palette.secondaryText,
-    fontWeight: '500',
   },
   reviewValue: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: Palette.dark,
     maxWidth: '65%',
+    textAlign: 'right',
+  },
+  reviewDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 4,
   },
   proReviewTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  reviewDivider: {
-    height: 1,
-    backgroundColor: Palette.outline,
-  },
   guaranteeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: '#F0FDF4',
-    padding: Spacing.md,
+    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+    padding: Spacing.sm + 2,
     borderRadius: BorderRadius.default,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   guaranteeText: {
     flex: 1,
     fontSize: 12,
-    color: '#15803D',
-    fontWeight: '500',
-  },
-  footer: {
-    padding: Spacing.md,
-    backgroundColor: Palette.surface,
-    borderTopWidth: 1,
-    borderTopColor: Palette.outline,
-  },
-  primaryActionBtn: {
-    height: 50,
-    borderRadius: BorderRadius.default,
-    backgroundColor: Palette.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryActionBtnDisabled: {
-    opacity: 0.7,
-  },
-  primaryActionBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    color: Palette.dark,
+    lineHeight: 16,
   },
   submitErrorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     backgroundColor: '#FFF5F5',
     padding: Spacing.sm,
     borderRadius: BorderRadius.default,
@@ -1000,9 +1168,34 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   submitErrorText: {
-    fontSize: 12,
     color: Palette.errorRed,
+    fontSize: 12,
     fontWeight: '600',
-    flex: 1,
+  },
+  footer: {
+    padding: Spacing.lg,
+    backgroundColor: Palette.surface,
+    borderTopWidth: 1,
+    borderTopColor: Palette.outline,
+  },
+  primaryActionBtn: {
+    height: 50,
+    backgroundColor: Palette.primary,
+    borderRadius: BorderRadius.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Palette.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  primaryActionBtnDisabled: {
+    opacity: 0.6,
+  },
+  primaryActionBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
