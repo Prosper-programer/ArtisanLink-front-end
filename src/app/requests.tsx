@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -79,16 +79,33 @@ export default function RequestsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Sync data whenever switching roles or opening screen
+  // Screen focus auto-refresh (whenever user navigates to Requests tab)
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        if (isProviderRole) {
+          fetchProviderRequestsAndJobs(token);
+        } else {
+          fetchCustomerRequests(token);
+        }
+      }
+    }, [token, isProviderRole])
+  );
+
+  // Periodic live background polling (every 6 seconds) so new jobs and status updates appear automatically
   useEffect(() => {
-    if (token) {
+    if (!token) return;
+
+    const pollTimer = setInterval(() => {
       if (isProviderRole) {
         fetchProviderRequestsAndJobs(token);
       } else {
         fetchCustomerRequests(token);
       }
-    }
-  }, [isProviderRole, token]);
+    }, 6000);
+
+    return () => clearInterval(pollTimer);
+  }, [token, isProviderRole]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -789,7 +806,16 @@ export default function RequestsScreen() {
                                           text: isFrench ? "Terminer" : "Complete",
                                           onPress: async () => {
                                             const res = await completeProviderJob(targetId);
-                                            Alert.alert(res.success ? "Success" : "Notice", res.message);
+                                            if (res.success) {
+                                              setSelectedReviewJob({
+                                                jobId: targetId,
+                                                targetName: req.customerName || req.serviceName || "Client",
+                                                isProviderReviewingCustomer: true,
+                                              });
+                                              setReviewModalVisible(true);
+                                            } else {
+                                              Alert.alert(isFrench ? "Notice" : "Notice", res.message);
+                                            }
                                           },
                                         },
                                       ]
@@ -1323,6 +1349,9 @@ export default function RequestsScreen() {
             onClose={() => {
               setReviewModalVisible(false);
               setSelectedReviewJob(null);
+            }}
+            onSuccess={() => {
+              onRefresh();
             }}
             jobId={selectedReviewJob.jobId}
             targetName={selectedReviewJob.targetName}

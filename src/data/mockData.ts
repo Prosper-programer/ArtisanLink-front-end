@@ -79,6 +79,8 @@ export interface ServiceRequest {
   rating?: number;
   unreadMessages?: boolean;
   completedDate?: string;
+  customerName?: string;
+  customerAvatar?: string;
 }
 
 export interface MessageItem {

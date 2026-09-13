@@ -23,6 +23,7 @@ export interface BackendServiceRequestDoc {
     fullName?: string;
     phoneNumber?: string;
     email?: string;
+    avatar?: string;
   };
   service?: {
     _id?: string;
@@ -106,6 +107,8 @@ export const mapBackendRequestToFrontend = (doc: BackendServiceRequestDoc): Serv
     statusIndex: frontIndex,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : 'Just now',
     estimatedCost: doc.estimatedCost || 0,
+    customerName: doc.customer?.fullName || '',
+    customerAvatar: doc.customer?.avatar || '',
   };
 };
 
