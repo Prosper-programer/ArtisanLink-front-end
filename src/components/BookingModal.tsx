@@ -8,7 +8,10 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  Alert,
+  Platform,
 } from 'react-native';
+import * as ExpoLocation from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ThemedText } from './themed-text';
@@ -19,10 +22,9 @@ import { FriendlyStepper, StepItem } from './FriendlyStepper';
 import { API_BASE_URL } from '@/constants/api';
 
 const STEPS: StepItem[] = [
-  { id: 1, title: 'Category' },
-  { id: 2, title: 'Problem' },
-  { id: 3, title: 'Location & Time' },
-  { id: 4, title: 'Select Pro' },
+  { id: 1, title: 'Trade & Problem' },
+  { id: 2, title: 'Location & Time' },
+  { id: 3, title: 'Artisan & Confirm' },
 ];
 
 const SAMPLE_PHOTO =
@@ -142,30 +144,68 @@ export const BookingModal: React.FC = () => {
     }
   };
 
-  // Reverse geocoding via Geoapify API
+  // Reverse geocoding via real device GPS + Geoapify API
   const handleUseMyLocation = async () => {
     setIsGeocodingCurrent(true);
     try {
-      // Default to Yaounde Bastos coordinates
-      const lat = 3.894;
-      const lon = 11.510;
-      const res = await fetch(`${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`);
-      const data = await res.json();
-      if (data.success && data.data?.formatted) {
-        setLocation(data.data.formatted);
-        setLocationSuggestions([]);
+      let lat: number | null = null;
+      let lon: number | null = null;
+
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
+        // Browser Geolocation for Web
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 10000,
+            enableHighAccuracy: true,
+          });
+        });
+        lat = pos.coords.latitude;
+        lon = pos.coords.longitude;
       } else {
-        setLocation('Bastos, Yaoundé, Cameroon');
+        // Native GPS via Expo Location
+        const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Location Permission Denied',
+            'Please allow location permission in your device settings so we can detect your exact location.'
+          );
+          setIsGeocodingCurrent(false);
+          return;
+        }
+
+        const locationResult = await ExpoLocation.getCurrentPositionAsync({
+          accuracy: ExpoLocation.Accuracy.Balanced,
+        });
+        lat = locationResult.coords.latitude;
+        lon = locationResult.coords.longitude;
       }
-    } catch {
-      setLocation('Bastos, Yaoundé, Cameroon');
+
+      if (lat != null && lon != null) {
+        const res = await fetch(`${API_BASE_URL}/location/reverse?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        if (data.success && data.data?.formatted) {
+          setLocation(data.data.formatted);
+          setLocationSuggestions([]);
+        } else if (data.data?.address_line1) {
+          setLocation(data.data.address_line1);
+          setLocationSuggestions([]);
+        } else {
+          setLocation(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+        }
+      }
+    } catch (err: any) {
+      console.warn('Real GPS fetch error:', err);
+      Alert.alert(
+        'Location Detection',
+        'Could not obtain your GPS coordinates. Please ensure location is enabled, or search your address manually.'
+      );
     } finally {
       setIsGeocodingCurrent(false);
     }
   };
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step < 3) {
       setStep(step + 1);
     } else {
       handleSubmitRequest();
@@ -254,7 +294,7 @@ export const BookingModal: React.FC = () => {
               <View>
                 <ThemedText style={styles.headerTitle}>Create Service Request</ThemedText>
                 <ThemedText style={styles.headerSub}>
-                  Step {step} of 4 • {STEPS[step - 1].title}
+                  Step {step} of 3 • {STEPS[step - 1]?.title}
                 </ThemedText>
               </View>
             </View>
@@ -270,27 +310,26 @@ export const BookingModal: React.FC = () => {
             currentStep={step}
             friendlySubtitle={
               step === 1
-                ? 'Step 1 of 4 • Choose your trade category 🛠️'
+                ? 'Step 1 of 3 • Choose trade & describe your problem 🛠️'
                 : step === 2
-                ? 'Step 2 of 4 • Describe the problem & attach photos 📸'
-                : step === 3
-                ? 'Step 3 of 4 • Address (Geoapify) & timing 📍'
-                : `Step 4 of 4 • Pick a verified ${selectedService.name} & confirm 🤝`
+                ? 'Step 2 of 3 • Pinpoint address (Geoapify GPS) & timing 📍'
+                : `Step 3 of 3 • Pick a verified ${selectedService.name} & confirm 🤝`
             }
           />
 
           {/* Scrollable Form Content */}
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {/* SCREEN 1: CATEGORY & PROFESSION */}
+            {/* SCREEN 1: TRADE CATEGORY & PROBLEM DETAILS */}
             {step === 1 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
                   What service do you need?
                 </ThemedText>
                 <ThemedText style={styles.stepSubtitle}>
-                  Choose the trade category matching your project.
+                  Select your trade category and describe the issue so the artisan arrives prepared.
                 </ThemedText>
 
+                <ThemedText style={styles.fieldLabel}>Select Trade Category *</ThemedText>
                 <View style={styles.servicesGrid}>
                   {POPULAR_SERVICES.map((srv) => {
                     const isSelected = srv.id === selectedService.id;
@@ -328,20 +367,11 @@ export const BookingModal: React.FC = () => {
                     );
                   })}
                 </View>
-              </View>
-            )}
 
-            {/* SCREEN 2: PROBLEM DETAILS & PHOTOS */}
-            {step === 2 && (
-              <View style={styles.stepContent}>
-                <ThemedText type="headlineMd" style={styles.stepTitle}>
-                  Tell us about your issue
+                {/* Problem Description */}
+                <ThemedText style={[styles.fieldLabel, { marginTop: Spacing.lg }]}>
+                  Problem Description *
                 </ThemedText>
-                <ThemedText style={styles.stepSubtitle}>
-                  Describe the problem clearly so the artisan comes prepared with the right tools.
-                </ThemedText>
-
-                <ThemedText style={styles.fieldLabel}>Problem Description *</ThemedText>
                 <TextInput
                   style={styles.textArea}
                   placeholder="e.g. The kitchen sink pipe has a severe leakage since yesterday morning..."
@@ -420,8 +450,8 @@ export const BookingModal: React.FC = () => {
               </View>
             )}
 
-            {/* SCREEN 3: LOCATION & SCHEDULE */}
-            {step === 3 && (
+            {/* SCREEN 2: LOCATION & SCHEDULE */}
+            {step === 2 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
                   Location & Schedule
@@ -541,8 +571,8 @@ export const BookingModal: React.FC = () => {
               </View>
             )}
 
-            {/* SCREEN 4: CHOOSE PROFESSIONAL (FILTERED) & CONFIRM */}
-            {step === 4 && (
+            {/* SCREEN 3: CHOOSE PROFESSIONAL (FILTERED) & CONFIRM */}
+            {step === 3 && (
               <View style={styles.stepContent}>
                 <ThemedText type="headlineMd" style={styles.stepTitle}>
                   Select Verified {selectedService.name}
@@ -691,7 +721,7 @@ export const BookingModal: React.FC = () => {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={styles.primaryActionBtnText}>
-                  {step === 4 ? 'Confirm & Submit Request ✓' : 'Continue →'}
+                  {step === 3 ? 'Confirm & Submit Request ✓' : 'Continue →'}
                 </ThemedText>
               )}
             </Pressable>
