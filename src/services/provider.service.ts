@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/constants/api';
+import { getCanonicalTrade } from '@/utils/professionMatcher';
 
 export interface BecomeProviderPayload {
   profession: string;
@@ -298,10 +299,13 @@ export function mapBackendProviderToProfessional(backendUser: any): any {
     : [];
 
   const firstSpec = specializations.length > 0 ? specializations.join(', ') : 'Professional Services';
-  const category = profession.toLowerCase();
+  const canonicalCat = getCanonicalTrade(profession);
+  const category = canonicalCat || profession.toLowerCase();
 
   return {
     id: backendUser._id || backendUser.id,
+    userId: backendUser._id || backendUser.id,
+    email: backendUser.email || '',
     name: backendUser.fullName || 'Artisan',
     verified: profile.isVerified || profile.verificationStatus === 'approved',
     profession: profession,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -24,6 +24,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS } from '@/data/mockData';
 import AppHeader from '@/components/AppHeader';
+import { isSameUserAsPro } from '@/utils/professionMatcher';
 
 const TRANSLATIONS = {
   en: {
@@ -145,11 +146,25 @@ export default function HomeScreen() {
     professionals,
     openProfessionalProfile,
     openProviderActivation,
+    activeRole,
   } = useApp();
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   const isGuest = authStatus === 'guest';
+
+  // Filter available nearby professionals: when in provider mode or registered as provider, exclude self
+  const availablePros = useMemo(() => {
+    const list = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
+    return list.filter((pro) => {
+      if (activeRole === 'provider' || user.isProvider) {
+        if (isSameUserAsPro(user, pro)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [professionals, user, activeRole]);
 
   const handleServiceClick = (cat: typeof POPULAR_SERVICES[0]) => {
     openServiceDetails(cat);
@@ -392,7 +407,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.proList}>
-                {(professionals || PROFESSIONALS).slice(0, 4).map((pro) => (
+                {availablePros.slice(0, 4).map((pro) => (
                   <Pressable
                     key={pro.id}
                     onPress={() => openProfessionalProfile(pro)}

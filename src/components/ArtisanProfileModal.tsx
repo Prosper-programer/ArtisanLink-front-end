@@ -12,6 +12,7 @@ import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getDefaultCoverForProfession } from '@/constants/professionAssets';
+import { isSameUserAsPro } from '@/utils/professionMatcher';
 
 export const ArtisanProfileModal: React.FC = () => {
   const {
@@ -21,6 +22,7 @@ export const ArtisanProfileModal: React.FC = () => {
     openCreateRequest,
     startChatWithPro,
     language,
+    user,
   } = useApp();
 
   if (!professionalProfileVisible || !selectedProfessional) return null;
@@ -179,15 +181,37 @@ export const ArtisanProfileModal: React.FC = () => {
 
           {/* Action Footer */}
           <View style={styles.footer}>
-            <Pressable onPress={handleStartChat} style={styles.chatBtn}>
-              <Ionicons name="chatbubble-ellipses" size={18} color={Palette.dark} />
-              <ThemedText style={styles.chatBtnText}>Chat</ThemedText>
-            </Pressable>
+            {isSameUserAsPro(user, pro) ? (
+              <View
+                style={[
+                  styles.requestBtn,
+                  {
+                    backgroundColor: Palette.surfaceContainerLow,
+                    borderWidth: 1,
+                    borderColor: Palette.outline,
+                    flex: 1,
+                    justifyContent: 'center',
+                    gap: 6,
+                  },
+                ]}>
+                <Ionicons name="person-circle-outline" size={18} color={Palette.primary} />
+                <ThemedText style={{ color: Palette.primary, fontWeight: '700', fontSize: 13 }}>
+                  {isFrench ? 'Votre profil public prestataire' : 'Your public provider profile'}
+                </ThemedText>
+              </View>
+            ) : (
+              <>
+                <Pressable onPress={handleStartChat} style={styles.chatBtn}>
+                  <Ionicons name="chatbubble-ellipses" size={18} color={Palette.dark} />
+                  <ThemedText style={styles.chatBtnText}>Chat</ThemedText>
+                </Pressable>
 
-            <Pressable onPress={handleRequestService} style={styles.requestBtn}>
-              <ThemedText style={styles.requestBtnText}>Request Service</ThemedText>
-              <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-            </Pressable>
+                <Pressable onPress={handleRequestService} style={styles.requestBtn}>
+                  <ThemedText style={styles.requestBtnText}>Request Service</ThemedText>
+                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       </View>

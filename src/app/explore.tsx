@@ -23,6 +23,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, Professional } from '@/data/mockData';
 import { SkeletonArtisanCard } from '@/components/SkeletonLoader';
+import { isProviderMatchingTrade, isSameUserAsPro } from '@/utils/professionMatcher';
 
 export default function ExploreScreen() {
   const {
@@ -35,6 +36,8 @@ export default function ExploreScreen() {
     authStatus,
     openAuthModal,
     language,
+    user,
+    activeRole,
   } = useApp();
 
   const isGuest = authStatus === 'guest';
@@ -71,12 +74,18 @@ export default function ExploreScreen() {
   const filteredPros = useMemo(() => {
     const list = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
     return list.filter((p) => {
-      // Category Filter
-      if (
-        selectedCategoryFilter !== 'all' &&
-        p.category.toLowerCase() !== selectedCategoryFilter.toLowerCase()
-      ) {
-        return false;
+      // In provider mode (or registered as provider), do not show self
+      if (activeRole === 'provider' || user.isProvider) {
+        if (isSameUserAsPro(user, p)) {
+          return false;
+        }
+      }
+
+      // Category / Profession matching
+      if (selectedCategoryFilter !== 'all') {
+        if (!isProviderMatchingTrade(p, selectedCategoryFilter)) {
+          return false;
+        }
       }
 
       // Quick Availability / Rating Filter
@@ -100,7 +109,7 @@ export default function ExploreScreen() {
       }
       return true;
     });
-  }, [professionals, selectedCategoryFilter, quickFilter, searchQuery]);
+  }, [professionals, selectedCategoryFilter, quickFilter, searchQuery, user, activeRole]);
 
   const handleChatPress = (pro: Professional) => {
     if (isGuest) {

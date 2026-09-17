@@ -20,6 +20,7 @@ import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, ServiceCategory, Professional } from '@/data/mockData';
 import { FriendlyStepper, StepItem } from './FriendlyStepper';
 import { API_BASE_URL } from '@/constants/api';
+import { isProviderMatchingTrade, isSameUserAsPro } from '@/utils/professionMatcher';
 
 const STEPS: StepItem[] = [
   { id: 1, title: 'Trade & Problem' },
@@ -43,6 +44,8 @@ export const BookingModal: React.FC = () => {
     openProfessionalProfile,
     professionals,
     language,
+    user,
+    activeRole,
   } = useApp();
 
   const [step, setStep] = useState(1);
@@ -65,31 +68,24 @@ export const BookingModal: React.FC = () => {
   const [time, setTime] = useState('14:00 - 16:00');
   const [isFlexible, setIsFlexible] = useState(false);
 
-  // Step 4: Choose Professional & Confirm
+  // Step 3: Choose Professional & Confirm
   const proList = professionals && professionals.length > 0 ? professionals : PROFESSIONALS;
 
   // Filter professionals strictly matching the chosen profession/category
+  // AND exclude the logged in user themselves (especially in provider mode)
   const filteredProfessionals = useMemo(() => {
-    const sName = (selectedService.name || '').toLowerCase();
-    const sId = (selectedService.id || '').toLowerCase();
-
-    const matches = proList.filter((pro) => {
-      const pCat = (pro.category || '').toLowerCase();
-      const pProf = (pro.profession || '').toLowerCase();
-      return (
-        pCat.includes(sId) ||
-        pProf.includes(sId) ||
-        pCat.includes(sName) ||
-        pProf.includes(sName) ||
-        sName.includes(pCat) ||
-        sName.includes(pProf)
-      );
+    return proList.filter((pro) => {
+      // Cannot choose yourself as a provider to perform a task
+      if (isSameUserAsPro(user, pro)) {
+        return false;
+      }
+      return isProviderMatchingTrade(pro, selectedService.id || selectedService.name);
     });
+  }, [proList, selectedService, user, activeRole]);
 
-    return matches.length > 0 ? matches : proList;
-  }, [proList, selectedService]);
-
-  const [selectedPro, setSelectedPro] = useState<Professional>(filteredProfessionals[0] || proList[0]);
+  const [selectedPro, setSelectedPro] = useState<Professional | null>(
+    filteredProfessionals.length > 0 ? filteredProfessionals[0] : null
+  );
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -102,18 +98,24 @@ export const BookingModal: React.FC = () => {
       if (preselectedService) {
         setSelectedService(preselectedService);
       }
-      if (preselectedPro) {
+      if (preselectedPro && !isSameUserAsPro(user, preselectedPro)) {
         setSelectedPro(preselectedPro);
       } else if (filteredProfessionals.length > 0) {
         setSelectedPro(filteredProfessionals[0]);
+      } else {
+        setSelectedPro(null);
       }
     }
   }, [createRequestVisible, preselectedService, preselectedPro]);
 
   // Update selectedPro when filtered list changes if current selection is not in list
   useEffect(() => {
-    if (filteredProfessionals.length > 0 && !filteredProfessionals.some((p) => p.id === selectedPro?.id)) {
-      setSelectedPro(filteredProfessionals[0]);
+    if (filteredProfessionals.length > 0) {
+      if (!selectedPro || !filteredProfessionals.some((p) => p.id === selectedPro?.id)) {
+        setSelectedPro(filteredProfessionals[0]);
+      }
+    } else {
+      setSelectedPro(null);
     }
   }, [filteredProfessionals]);
 
@@ -232,6 +234,27 @@ export const BookingModal: React.FC = () => {
   const executeFinalSubmit = async () => {
     setSubmitting(true);
     setSubmitError(null);
+
+    if (!selectedPro) {
+      setSubmitError(
+        language === 'fr'
+          ? `Aucun artisan ${selectedService.name} n'est sélectionné.`
+          : `No ${selectedService.name} artisan selected.`
+      );
+      setSubmitting(false);
+      return;
+    }
+
+    if (isSameUserAsPro(user, selectedPro)) {
+      setSubmitError(
+        language === 'fr'
+          ? 'Vous ne pouvez pas vous choisir vous-même comme prestataire.'
+          : 'You cannot select yourself as the service provider.'
+      );
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const createdReq = await submitServiceRequest({
         serviceCategory: selectedService.name,
@@ -590,67 +613,81 @@ export const BookingModal: React.FC = () => {
                 )}
 
                 {/* Filtered Provider Cards */}
-                <View style={styles.proList}>
-                  {filteredProfessionals.map((pro) => {
-                    const isSelected = pro.id === selectedPro?.id;
-                    return (
-                      <Pressable
-                        key={pro.id}
-                        onPress={() => setSelectedPro(pro)}
-                        style={[
-                          styles.proPickCard,
-                          isSelected && styles.proPickCardSelected,
-                        ]}>
-                        <View style={styles.proPickTop}>
-                          <Image source={{ uri: pro.avatar }} style={styles.proAvatar} />
-                          <View style={styles.proPickInfo}>
-                            <View style={styles.proNameRow}>
-                              <ThemedText style={styles.proName}>{pro.name}</ThemedText>
-                              {pro.verified && (
-                                <Ionicons
-                                  name="checkmark-circle"
-                                  size={16}
-                                  color={Palette.success}
-                                />
-                              )}
+                {filteredProfessionals.length === 0 ? (
+                  <View style={styles.noProsBox}>
+                    <Ionicons name="alert-circle-outline" size={36} color={Palette.secondaryText} />
+                    <ThemedText style={styles.noProsTitle}>
+                      {language === 'fr' ? 'Aucun artisan disponible' : 'No Artisans Available'}
+                    </ThemedText>
+                    <ThemedText style={styles.noProsSub}>
+                      {language === 'fr'
+                        ? `Aucun artisan ${selectedService.name} n'est disponible pour le moment.`
+                        : `No verified ${selectedService.name} artisans are available right now.`}
+                    </ThemedText>
+                  </View>
+                ) : (
+                  <View style={styles.proList}>
+                    {filteredProfessionals.map((pro) => {
+                      const isSelected = pro.id === selectedPro?.id;
+                      return (
+                        <Pressable
+                          key={pro.id}
+                          onPress={() => setSelectedPro(pro)}
+                          style={[
+                            styles.proPickCard,
+                            isSelected && styles.proPickCardSelected,
+                          ]}>
+                          <View style={styles.proPickTop}>
+                            <Image source={{ uri: pro.avatar }} style={styles.proAvatar} />
+                            <View style={styles.proPickInfo}>
+                              <View style={styles.proNameRow}>
+                                <ThemedText style={styles.proName}>{pro.name}</ThemedText>
+                                {pro.verified && (
+                                  <Ionicons
+                                    name="checkmark-circle"
+                                    size={16}
+                                    color={Palette.success}
+                                  />
+                                )}
+                              </View>
+                              <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
+                              <View style={styles.proMetaRow}>
+                                <Ionicons name="star" size={13} color={Palette.gold} />
+                                <ThemedText style={styles.proRating}>
+                                  {pro.rating} ({pro.reviewCount} reviews)
+                                </ThemedText>
+                                <ThemedText style={styles.metaDot}>•</ThemedText>
+                                <ThemedText style={styles.proDistance}>{pro.distance || 'Near you'}</ThemedText>
+                              </View>
                             </View>
-                            <ThemedText style={styles.proProfession}>{pro.profession}</ThemedText>
-                            <View style={styles.proMetaRow}>
-                              <Ionicons name="star" size={13} color={Palette.gold} />
-                              <ThemedText style={styles.proRating}>
-                                {pro.rating} ({pro.reviewCount} reviews)
+                            <View style={styles.radioIndicator}>
+                              <Ionicons
+                                name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                                size={22}
+                                color={isSelected ? Palette.primary : Palette.secondaryText}
+                              />
+                            </View>
+                          </View>
+
+                          <View style={styles.proPickActions}>
+                            <Pressable
+                              onPress={() => openProfessionalProfile(pro)}
+                              style={styles.viewProProfileBtn}>
+                              <ThemedText style={styles.viewProProfileText}>View Credentials</ThemedText>
+                            </Pressable>
+
+                            <View style={styles.rateBadge}>
+                              <Ionicons name="receipt-outline" size={13} color={Palette.primary} />
+                              <ThemedText style={styles.rateBadgeText}>
+                                {language === 'fr' ? 'Sur Devis' : 'Direct Quote'}
                               </ThemedText>
-                              <ThemedText style={styles.metaDot}>•</ThemedText>
-                              <ThemedText style={styles.proDistance}>{pro.distance || 'Near you'}</ThemedText>
                             </View>
                           </View>
-                          <View style={styles.radioIndicator}>
-                            <Ionicons
-                              name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                              size={22}
-                              color={isSelected ? Palette.primary : Palette.secondaryText}
-                            />
-                          </View>
-                        </View>
-
-                        <View style={styles.proPickActions}>
-                          <Pressable
-                            onPress={() => openProfessionalProfile(pro)}
-                            style={styles.viewProProfileBtn}>
-                            <ThemedText style={styles.viewProProfileText}>View Credentials</ThemedText>
-                          </Pressable>
-
-                          <View style={styles.rateBadge}>
-                            <Ionicons name="receipt-outline" size={13} color={Palette.primary} />
-                            <ThemedText style={styles.rateBadgeText}>
-                              {language === 'fr' ? 'Sur Devis' : 'Direct Quote'}
-                            </ThemedText>
-                          </View>
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
 
                 {/* Final Order Review Summary Card */}
                 <View style={styles.reviewSummaryCard}>
@@ -684,8 +721,12 @@ export const BookingModal: React.FC = () => {
                   <View style={styles.reviewRow}>
                     <ThemedText style={styles.reviewLabel}>Selected Pro</ThemedText>
                     <View style={styles.proReviewTag}>
-                      <ThemedText style={styles.reviewValue}>{selectedPro?.name || 'Top Artisan'}</ThemedText>
-                      <Ionicons name="checkmark-circle" size={14} color={Palette.success} />
+                      <ThemedText style={styles.reviewValue}>
+                        {selectedPro?.name || (language === 'fr' ? 'Aucun artisan' : 'None Selected')}
+                      </ThemedText>
+                      {selectedPro && (
+                        <Ionicons name="checkmark-circle" size={14} color={Palette.success} />
+                      )}
                     </View>
                   </View>
 
@@ -716,14 +757,23 @@ export const BookingModal: React.FC = () => {
           <View style={styles.footer}>
             <Pressable
               onPress={handleNext}
-              style={[styles.primaryActionBtn, submitting && styles.primaryActionBtnDisabled]}
-              disabled={submitting}
+              style={[
+                styles.primaryActionBtn,
+                (submitting || (step === 3 && !selectedPro)) && styles.primaryActionBtnDisabled,
+              ]}
+              disabled={submitting || (step === 3 && !selectedPro)}
               accessibilityRole="button">
               {submitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={styles.primaryActionBtnText}>
-                  {step === 3 ? 'Confirm & Submit Request ✓' : 'Continue →'}
+                  {step === 3
+                    ? selectedPro
+                      ? 'Confirm & Submit Request ✓'
+                      : language === 'fr'
+                      ? 'Sélectionnez un artisan'
+                      : 'Select an Artisan to Continue'
+                    : 'Continue →'}
                 </ThemedText>
               )}
             </Pressable>
@@ -1133,6 +1183,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: Palette.primary,
+  },
+  noProsBox: {
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.default,
+    borderWidth: 1,
+    borderColor: Palette.outline,
+    marginVertical: Spacing.md,
+    gap: Spacing.xs,
+  },
+  noProsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Palette.dark,
+    marginTop: Spacing.xs,
+  },
+  noProsSub: {
+    fontSize: 13,
+    color: Palette.secondaryText,
+    textAlign: 'center',
+    maxWidth: 280,
   },
   reviewSummaryCard: {
     backgroundColor: '#FFFFFF',
