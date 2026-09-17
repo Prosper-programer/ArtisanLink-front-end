@@ -435,18 +435,6 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
-
-        {/* Quick Floating Action Button to directly create a service request from anywhere on home */}
-        <Pressable
-          onPress={() => openCreateRequest()}
-          style={styles.floatingCreateBtn}
-          accessibilityRole="button"
-          accessibilityLabel={t.createServiceButton}>
-          <Ionicons name="add" size={20} color="#FFFFFF" />
-          <ThemedText style={styles.floatingCreateBtnText}>
-            {t.floatingCreateText}
-          </ThemedText>
-        </Pressable>
       </SafeAreaView>
     </ThemedView>
   );
@@ -627,30 +615,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  floatingCreateBtn: {
-    position: 'absolute',
-    bottom: BottomTabInset + 16,
-    right: Spacing.lg,
-    backgroundColor: Palette.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    borderRadius: BorderRadius.full,
-    shadowColor: Palette.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
-    zIndex: 99,
-  },
-  floatingCreateBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.2,
   },
   sectionHeader: {
     flexDirection: 'row',

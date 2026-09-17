@@ -42,6 +42,7 @@ export const BookingModal: React.FC = () => {
     openRequestSubmitted,
     openProfessionalProfile,
     professionals,
+    language,
   } = useApp();
 
   const [step, setStep] = useState(1);
@@ -242,7 +243,7 @@ export const BookingModal: React.FC = () => {
         time,
         isFlexible,
         professional: selectedPro,
-        estimatedCost: selectedPro ? selectedPro.hourlyRate * 1.5 : 15000,
+        estimatedCost: 0,
       });
 
       closeCreateRequest();
@@ -640,8 +641,9 @@ export const BookingModal: React.FC = () => {
                           </Pressable>
 
                           <View style={styles.rateBadge}>
+                            <Ionicons name="receipt-outline" size={13} color={Palette.primary} />
                             <ThemedText style={styles.rateBadgeText}>
-                              {pro.hourlyRate ? `${pro.hourlyRate.toLocaleString()} XAF/hr` : 'Fair Rate'}
+                              {language === 'fr' ? 'Sur Devis' : 'Direct Quote'}
                             </ThemedText>
                           </View>
                         </View>
@@ -691,10 +693,10 @@ export const BookingModal: React.FC = () => {
 
                   <View style={styles.reviewRow}>
                     <ThemedText style={[styles.reviewLabel, { fontWeight: '700' }]}>
-                      Estimated Cost
+                      {language === 'fr' ? 'Tarification' : 'Pricing Mode'}
                     </ThemedText>
                     <ThemedText style={[styles.reviewValue, { color: Palette.primary, fontWeight: '800' }]}>
-                      {selectedPro ? `${(selectedPro.hourlyRate * 1.5).toLocaleString()} XAF` : '15,000 XAF'}
+                      {language === 'fr' ? 'Sur Devis (Par Tâche)' : 'Direct Quote (Per Task)'}
                     </ThemedText>
                   </View>
                 </View>
@@ -1120,6 +1122,9 @@ const styles = StyleSheet.create({
   },
   rateBadge: {
     backgroundColor: '#F1F5F9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: BorderRadius.sm,
@@ -1127,7 +1132,7 @@ const styles = StyleSheet.create({
   rateBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Palette.dark,
+    color: Palette.primary,
   },
   reviewSummaryCard: {
     backgroundColor: '#FFFFFF',
