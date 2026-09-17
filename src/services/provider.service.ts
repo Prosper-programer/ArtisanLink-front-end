@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/constants/api';
-import { getCanonicalTrade } from '@/utils/professionMatcher';
+import { getCanonicalTrade } from '@/constants/professionMatcher';
 
 export interface BecomeProviderPayload {
   profession: string;

@@ -24,7 +24,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS } from '@/data/mockData';
 import AppHeader from '@/components/AppHeader';
-import { isSameUserAsPro } from '@/utils/professionMatcher';
+import { isSameUserAsPro } from '@/constants/professionMatcher';
 
 const TRANSLATIONS = {
   en: {

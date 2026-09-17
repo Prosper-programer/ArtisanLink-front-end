@@ -23,7 +23,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, Professional } from '@/data/mockData';
 import { SkeletonArtisanCard } from '@/components/SkeletonLoader';
-import { isProviderMatchingTrade, isSameUserAsPro } from '@/utils/professionMatcher';
+import { isProviderMatchingTrade, isSameUserAsPro } from '@/constants/professionMatcher';
 
 export default function ExploreScreen() {
   const {

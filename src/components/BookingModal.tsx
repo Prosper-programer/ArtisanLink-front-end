@@ -20,7 +20,7 @@ import { useApp } from '@/context/AppContext';
 import { POPULAR_SERVICES, PROFESSIONALS, ServiceCategory, Professional } from '@/data/mockData';
 import { FriendlyStepper, StepItem } from './FriendlyStepper';
 import { API_BASE_URL } from '@/constants/api';
-import { isProviderMatchingTrade, isSameUserAsPro } from '@/utils/professionMatcher';
+import { isProviderMatchingTrade, isSameUserAsPro } from '@/constants/professionMatcher';
 
 const STEPS: StepItem[] = [
   { id: 1, title: 'Trade & Problem' },

@@ -12,7 +12,7 @@ import { ThemedText } from './themed-text';
 import { Palette, Spacing, BorderRadius } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getDefaultCoverForProfession } from '@/constants/professionAssets';
-import { isSameUserAsPro } from '@/utils/professionMatcher';
+import { isSameUserAsPro } from '@/constants/professionMatcher';
 
 export const ArtisanProfileModal: React.FC = () => {
   const {
