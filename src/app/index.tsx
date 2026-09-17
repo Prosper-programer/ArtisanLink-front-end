@@ -68,6 +68,9 @@ const TRANSLATIONS = {
     englishSub: 'English (US / UK)',
     french: 'Français',
     frenchSub: 'French',
+    createServiceButton: 'Create a Service Request',
+    createServiceSub: 'Describe your need & connect with verified artisans',
+    floatingCreateText: 'Request Service',
   },
   fr: {
     greetingGuest: 'Bonjour 👋',
@@ -111,6 +114,9 @@ const TRANSLATIONS = {
     englishSub: 'Anglais (US / UK)',
     french: 'Français',
     frenchSub: 'Français',
+    createServiceButton: 'Créer une demande de service',
+    createServiceSub: 'Décrivez votre besoin et trouvez un artisan certifié',
+    floatingCreateText: 'Demander un service',
   },
 };
 
@@ -135,6 +141,7 @@ export default function HomeScreen() {
     setLanguage,
     openAuthModal,
     openServiceDetails,
+    openCreateRequest,
     professionals,
     openProfessionalProfile,
     openProviderActivation,
@@ -188,6 +195,30 @@ export default function HomeScreen() {
             <ThemedText style={styles.searchPlaceholder}>
               {t.searchPlaceholder}
             </ThemedText>
+          </Pressable>
+
+          {/* Quick Action: "Create a Service" CTA Button */}
+          <Pressable
+            onPress={() => openCreateRequest()}
+            style={styles.createServiceBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t.createServiceButton}>
+            <View style={styles.createServiceLeft}>
+              <View style={styles.createServiceIconWrap}>
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+              </View>
+              <View style={styles.createServiceTextWrap}>
+                <ThemedText style={styles.createServiceBtnTitle}>
+                  {t.createServiceButton}
+                </ThemedText>
+                <ThemedText style={styles.createServiceBtnSub} numberOfLines={1}>
+                  {t.createServiceSub}
+                </ThemedText>
+              </View>
+            </View>
+            <View style={styles.createServiceArrowWrap}>
+              <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+            </View>
           </Pressable>
 
           {/* POPULAR SERVICES SECTION (Visible to both guest and authenticated users) */}
@@ -404,6 +435,18 @@ export default function HomeScreen() {
             </>
           )}
         </ScrollView>
+
+        {/* Quick Floating Action Button to directly create a service request from anywhere on home */}
+        <Pressable
+          onPress={() => openCreateRequest()}
+          style={styles.floatingCreateBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t.createServiceButton}>
+          <Ionicons name="add" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.floatingCreateBtnText}>
+            {t.floatingCreateText}
+          </ThemedText>
+        </Pressable>
       </SafeAreaView>
     </ThemedView>
   );
@@ -531,6 +574,83 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: Palette.secondaryText,
+  },
+  createServiceBtn: {
+    backgroundColor: Palette.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    shadowColor: Palette.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  createServiceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm + 2,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  createServiceIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createServiceTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  createServiceBtnTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  createServiceBtnSub: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.88)',
+    fontWeight: '500',
+  },
+  createServiceArrowWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingCreateBtn: {
+    position: 'absolute',
+    bottom: BottomTabInset + 16,
+    right: Spacing.lg,
+    backgroundColor: Palette.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: BorderRadius.full,
+    shadowColor: Palette.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 99,
+  },
+  floatingCreateBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   sectionHeader: {
     flexDirection: 'row',
